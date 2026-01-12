@@ -1,26 +1,69 @@
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@300&display=swap");
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  --background: #fbf7ff;
   --foreground: #171717;
+  --primary: #884da0;
+  --accent: #2f9d7c;
+  --card: #ffffff;
+  --muted: #f3eef8;
+  --font-sans-family: "Montserrat";
+  --font-heading-family: "Bebas Neue";
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-primary: var(--primary);
+  --color-accent: var(--accent);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --font-sans: var(--font-sans-family);
+  --font-heading: var(--font-heading-family);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading), var(--font-sans), system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
+    sans-serif;
+  letter-spacing: 0.02em;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-zinc-200 bg-card shadow-sm;
+  }
+
+  .btn {
+    @apply inline-flex h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-white hover:opacity-95 active:opacity-90;
+  }
+
+  .btn-secondary {
+    @apply bg-accent text-white hover:opacity-95 active:opacity-90;
+  }
+
+  .btn-ghost {
+    @apply border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50;
+  }
+
+  .input {
+    @apply h-11 rounded-xl border border-zinc-200 bg-white px-3 text-sm outline-none focus:border-zinc-400;
+  }
+
+  .textarea {
+    @apply min-h-28 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400;
+  }
 }

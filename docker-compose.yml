@@ -1,0 +1,55 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_PATH: /data/prod.sqlite
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      DEFAULT_EVENT_SLUG: ${DEFAULT_EVENT_SLUG:-default}
+      DEFAULT_EVENT_NAME: ${DEFAULT_EVENT_NAME:-Popova Events}
+      ALLOW_PUBLIC_EVENT_CREATE: ${ALLOW_PUBLIC_EVENT_CREATE:-0}
+      QR_SECRET: ${QR_SECRET}
+      ALLOW_UNSIGNED_QR: ${ALLOW_UNSIGNED_QR:-0}
+      DEV_ALLOW_MOCK_AUTH: "0"
+      ADMIN_TELEGRAM_IDS: ${ADMIN_TELEGRAM_IDS:-}
+    volumes:
+      - ./data:/data
+      - ./uploads:/app/public/uploads
+
+  bot:
+    build: .
+    restart: unless-stopped
+    command: ["npm", "run", "bot"]
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      WEBAPP_URL: ${WEBAPP_URL}
+      DEFAULT_EVENT_SLUG: ${DEFAULT_EVENT_SLUG:-default}
+      WELCOME_TEXT: ${WELCOME_TEXT:-}
+      CONTACT_TEXT: ${CONTACT_TEXT:-}
+      DATABASE_PATH: /data/prod.sqlite
+      QR_SECRET: ${QR_SECRET}
+      ALLOW_UNSIGNED_QR: ${ALLOW_UNSIGNED_QR:-0}
+      DEV_ALLOW_MOCK_AUTH: "0"
+    volumes:
+      - ./data:/data
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:
+

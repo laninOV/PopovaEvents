@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Telegram Mini App для оффлайн‑мероприятий: анкета участника → персональный QR → скан QR → “мои встречи” → заметки/оценки.
 
-## Getting Started
+## Запуск локально
 
-First, run the development server:
+1) Установить зависимости:
+
+```bash
+npm install
+```
+
+2) Создать `.env` (можно скопировать из `.env.example`):
+
+```bash
+cp .env.example .env
+```
+
+3) Запустить dev‑сервер:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Открыть `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Telegram и авторизация
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Внутри Telegram WebApp запросы подписываются `initData`. Backend валидирует `initData` с помощью `TELEGRAM_BOT_TOKEN`.
+- Локально (в браузере) можно запускать без Telegram: `DEV_ALLOW_MOCK_AUTH=1`, а id пользователя берётся из `DEV_TELEGRAM_ID` или заголовка `x-dev-telegram-id`.
 
-## Learn More
+Чтобы проверить в Telegram:
+- Создать бота через `@BotFather`, получить токен и прописать его в `TELEGRAM_BOT_TOKEN`.
+- Подключить Mini App URL к боту (WebApp) и открыть приложение из Telegram.
 
-To learn more about Next.js, take a look at the following resources:
+## Бот (локально)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Минимальный лаунчер бота лежит в `bot/bot.ts`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run bot
+```
 
-## Deploy on Vercel
+Переменные: `TELEGRAM_BOT_TOKEN`, `WEBAPP_URL` (для Telegram должен быть `https://...`), `DEFAULT_EVENT_SLUG`, опционально `WELCOME_TEXT`, `CONTACT_TEXT`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Хранилище
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- SQLite файл: путь задаётся `DATABASE_PATH` (по умолчанию `./data/dev.sqlite`).
+- Загруженные фото сохраняются в `public/uploads` (dev/MVP режим).
+
+## Ивенты
+
+- Текущий ивент выбирается в `eventSlug` (localStorage) и отправляется на backend заголовком `x-event-slug`.
+- Можно передать `?event=<slug>` в URL — он сохранится в localStorage автоматически.
+- По умолчанию используется `DEFAULT_EVENT_SLUG`.
+- Для авто‑создания неизвестных ивентов включите `ALLOW_PUBLIC_EVENT_CREATE=1` (иначе будет `event_not_found`).
+
+## Меню
+
+- `📝 Регистрация`: анкета участника + загрузка фото.
+- `👥 Участники`: каталог участников с раскрытием карточки.
+- `🎤 Спикеры`: список спикеров (заполняется через админку).
+- `🗓️ Программа`: расписание (заполняется через админку).
+- `💬 Чат`: ссылка на чат (выдаётся только зарегистрированным; ссылка задаётся в админке).
+- `🤝 Знакомства`: список отсканированных контактов.
+- `👤 Я`: профиль + кнопка QR.
+
+## QR формат
+
+QR выдаётся с backend через `GET /api/qr` и содержит строку `pe:<eventSlug>:<publicId>:<ts>:<sig>` (HMAC SHA-256, ключ `QR_SECRET`).
+Для совместимости можно включить `ALLOW_UNSIGNED_QR=1` (тогда разрешается старый формат `pe:<eventSlug>:<publicId>` / `pe:<publicId>`).
+
+## Админка
+
+- Включите доступ: `ADMIN_TELEGRAM_IDS="123,456"` (Telegram user id через запятую).
+- Откройте `/admin` внутри Mini App: настройки чата, спикеры, программа.
