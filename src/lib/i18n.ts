@@ -1,7 +1,8 @@
 export type Lang = "ru" | "en";
 
 export type I18nKey =
-  | "nav.home"
+  | "nav.profile"
+  | "nav.scan"
   | "nav.participants"
   | "nav.program"
   | "home.title"
@@ -53,7 +54,8 @@ export type I18nKey =
 
 const dict: Record<Lang, Record<I18nKey, string>> = {
   ru: {
-    "nav.home": "Главная",
+    "nav.profile": "Профиль",
+    "nav.scan": "Сканировать",
     "nav.participants": "Участники",
     "nav.program": "Программа",
 
@@ -111,7 +113,8 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "gate.loading": "Загрузка…",
   },
   en: {
-    "nav.home": "Home",
+    "nav.profile": "Profile",
+    "nav.scan": "Scan",
     "nav.participants": "Participants",
     "nav.program": "Program",
 
@@ -174,4 +177,3 @@ export function translate(lang: Lang, key: I18nKey, vars?: Record<string, string
   if (!vars) return base;
   return base.replace(/\{(\w+)\}/g, (_, name: string) => String(vars[name] ?? `{${name}}`));
 }
-
