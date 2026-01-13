@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { tgReady } from "@/lib/tgWebApp";
+import { useAppSettings } from "@/components/AppSettingsProvider";
 
 type Speaker = {
   id: string;
@@ -38,6 +39,7 @@ export default function ProgramPage() {
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useAppSettings();
 
   useEffect(() => {
     tgReady();
@@ -55,7 +57,7 @@ export default function ProgramPage() {
   return (
     <main className="space-y-4">
       <header>
-        <h1 className="text-2xl">Программа</h1>
+        <h1 className="text-2xl">{t("program.title")}</h1>
       </header>
 
       <div className="card p-2">
@@ -65,14 +67,14 @@ export default function ProgramPage() {
             onClick={() => setTab("program")}
             className={`btn h-10 ${tab === "program" ? "btn-primary" : "btn-ghost"}`}
           >
-            Программа
+            {t("program.tab.program")}
           </button>
           <button
             type="button"
             onClick={() => setTab("speakers")}
             className={`btn h-10 ${tab === "speakers" ? "btn-primary" : "btn-ghost"}`}
           >
-            Спикеры
+            {t("program.tab.speakers")}
           </button>
         </div>
       </div>
@@ -82,13 +84,13 @@ export default function ProgramPage() {
 
       {!loading && tab === "program" && items.length === 0 ? (
         <section className="card p-4">
-          <div className="text-sm text-zinc-600">Программа появится здесь позже.</div>
+          <div className="text-sm text-[color:var(--muted-fg)]">{t("program.empty")}</div>
         </section>
       ) : null}
 
       {!loading && tab === "speakers" && speakers.length === 0 ? (
         <section className="card p-4">
-          <div className="text-sm text-zinc-600">Спикеры появятся здесь позже.</div>
+          <div className="text-sm text-[color:var(--muted-fg)]">{t("speakers.empty")}</div>
         </section>
       ) : null}
 
@@ -152,4 +154,3 @@ export default function ProgramPage() {
     </main>
   );
 }
-

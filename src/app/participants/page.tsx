@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { tgReady } from "@/lib/tgWebApp";
+import { useAppSettings } from "@/components/AppSettingsProvider";
 
 type Participant = {
   userId: string;
@@ -34,6 +35,7 @@ export default function ParticipantsPage() {
   const [items, setItems] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useAppSettings();
 
   useEffect(() => {
     tgReady();
@@ -57,8 +59,8 @@ export default function ParticipantsPage() {
   return (
     <main className="space-y-4">
       <header>
-        <h1 className="text-2xl">Участники</h1>
-        <p className="mt-1 text-sm text-zinc-600">Нажмите на карточку, чтобы раскрыть подробности.</p>
+        <h1 className="text-2xl">{t("participants.title")}</h1>
+        <p className="mt-1 text-sm text-[color:var(--muted-fg)]">{t("participants.subtitle")}</p>
       </header>
 
       <div className="card p-3">
@@ -66,7 +68,7 @@ export default function ParticipantsPage() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           className="input w-full"
-          placeholder="Поиск по имени / нише / Instagram…"
+          placeholder={t("participants.searchPlaceholder")}
         />
       </div>
 
@@ -75,7 +77,7 @@ export default function ParticipantsPage() {
 
       {!loading && filtered.length === 0 ? (
         <section className="card p-4">
-          <div className="text-sm text-zinc-600">Пока нет участников с заполненным профилем.</div>
+          <div className="text-sm text-[color:var(--muted-fg)]">{t("participants.empty")}</div>
         </section>
       ) : null}
 
@@ -97,32 +99,34 @@ export default function ParticipantsPage() {
                   )}
                   <div className="min-w-0 flex-1">
                     <div className="text-base font-semibold">{name}</div>
-                    {p.profile.niche ? <div className="mt-0.5 text-sm text-zinc-600">{p.profile.niche}</div> : null}
+                    {p.profile.niche ? (
+                      <div className="mt-0.5 text-sm text-[color:var(--muted-fg)]">{p.profile.niche}</div>
+                    ) : null}
                   </div>
-                  <div className="text-sm text-zinc-600">▾</div>
+                  <div className="text-sm text-[color:var(--muted-fg)]">▾</div>
                 </summary>
 
                 <div className="mt-3 grid gap-3 text-sm">
                   {p.profile.about ? (
                     <div>
-                      <div className="text-zinc-600">Коротко о себе</div>
+                      <div className="text-[color:var(--muted-fg)]">{t("form.about")}</div>
                       <div className="whitespace-pre-wrap">{p.profile.about}</div>
                     </div>
                   ) : null}
                   {p.profile.helpful ? (
                     <div>
-                      <div className="text-zinc-600">Чем может быть полезен</div>
+                      <div className="text-[color:var(--muted-fg)]">{t("form.helpful")}</div>
                       <div className="whitespace-pre-wrap">{p.profile.helpful}</div>
                     </div>
                   ) : null}
                   <div>
-                    <div className="text-zinc-600">Instagram</div>
+                    <div className="text-[color:var(--muted-fg)]">{t("form.instagram")}</div>
                     {instagramHref ? (
                       <a href={instagramHref} className="text-accent underline" target="_blank" rel="noreferrer">
                         {p.profile.instagram}
                       </a>
                     ) : (
-                      <div className="text-zinc-600">—</div>
+                      <div className="text-[color:var(--muted-fg)]">—</div>
                     )}
                   </div>
                 </div>
@@ -134,4 +138,3 @@ export default function ParticipantsPage() {
     </main>
   );
 }
-

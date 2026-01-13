@@ -8,8 +8,19 @@
   --accent: #2f9d7c;
   --card: #ffffff;
   --muted: #f3eef8;
+  --border: rgba(17, 17, 17, 0.12);
+  --muted-fg: rgba(17, 17, 17, 0.62);
   --font-sans-family: "Montserrat";
   --font-heading-family: "Bebas Neue";
+}
+
+:root[data-theme="dark"] {
+  --background: #0b0a10;
+  --foreground: #f5f1ff;
+  --card: #141220;
+  --muted: #1b182a;
+  --border: rgba(245, 241, 255, 0.14);
+  --muted-fg: rgba(245, 241, 255, 0.68);
 }
 
 @theme inline {
@@ -29,6 +40,39 @@ body {
   font-family: var(--font-sans), system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
 }
 
+button,
+a,
+input,
+textarea,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-primary:hover,
+.btn-secondary:hover {
+  opacity: 0.95;
+}
+
+.btn-primary:active,
+.btn-secondary:active {
+  opacity: 0.9;
+}
+
+.btn-ghost:hover {
+  background: rgba(127, 127, 127, 0.08);
+}
+
+.btn-ghost:active {
+  background: rgba(127, 127, 127, 0.12);
+}
+
+.input:focus,
+.textarea:focus,
+select.input:focus {
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 16%, transparent);
+}
+
 h1,
 h2,
 h3,
@@ -40,30 +84,60 @@ h4 {
 
 @layer components {
   .card {
-    @apply rounded-2xl border border-zinc-200 bg-card shadow-sm;
+    border: 1px solid var(--border);
+    background: var(--card);
+    border-radius: 16px;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02), 0 10px 30px rgba(0, 0, 0, 0.05);
   }
 
   .btn {
-    @apply inline-flex h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30;
+    display: inline-flex;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 700;
+    transition: background-color 120ms ease, color 120ms ease, opacity 120ms ease, border-color 120ms ease;
+    outline: none;
   }
 
   .btn-primary {
-    @apply bg-primary text-white hover:opacity-95 active:opacity-90;
+    background: var(--primary);
+    color: white;
   }
 
   .btn-secondary {
-    @apply bg-accent text-white hover:opacity-95 active:opacity-90;
+    background: var(--accent);
+    color: white;
   }
 
   .btn-ghost {
-    @apply border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--foreground);
   }
 
   .input {
-    @apply h-11 rounded-xl border border-zinc-200 bg-white px-3 text-sm outline-none focus:border-zinc-400;
+    height: 44px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: transparent;
+    padding: 0 12px;
+    font-size: 14px;
+    color: var(--foreground);
+    outline: none;
   }
 
   .textarea {
-    @apply min-h-28 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400;
+    min-height: 112px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: transparent;
+    padding: 8px 12px;
+    font-size: 14px;
+    color: var(--foreground);
+    outline: none;
   }
 }

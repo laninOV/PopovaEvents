@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { getTelegramUnsafeUser, tgReady } from "@/lib/tgWebApp";
+import { useAppSettings } from "@/components/AppSettingsProvider";
 
 type MeResponse = {
   user: { publicId: string };
@@ -15,6 +16,7 @@ type MeResponse = {
 export default function HomePage() {
   const [me, setMe] = useState<MeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useAppSettings();
 
   useEffect(() => {
     tgReady();
@@ -29,22 +31,22 @@ export default function HomePage() {
   return (
     <main className="space-y-4">
       <header className="card p-4">
-        <div className="text-sm text-zinc-600">{me?.event?.name ?? "Ивент"}</div>
-        <h1 className="mt-1 text-3xl">Привет, {name}</h1>
+        <div className="text-sm text-[color:var(--muted-fg)]">{me?.event?.name ?? "Ивент"}</div>
+        <h1 className="mt-1 text-3xl">{t("home.title", { name })}</h1>
         <div className="mt-4 grid gap-2">
           <div className="grid grid-cols-2 gap-2">
             <Link href="/qr" className="btn btn-primary">
-              Мой QR
+              {t("home.qr")}
             </Link>
             <Link href="/scan" className="btn btn-secondary">
-              Сканировать
+              {t("home.scan")}
             </Link>
           </div>
           <Link href="/meetings" className="btn btn-ghost">
-            Мои знакомства ({me?.stats?.meetingsCount ?? "—"})
+            {t("home.meetings", { n: me?.stats?.meetingsCount ?? "—" })}
           </Link>
           <Link href="/chat" className="btn btn-ghost">
-            Чат
+            {t("home.chat")}
           </Link>
         </div>
       </header>
@@ -55,10 +57,10 @@ export default function HomePage() {
 
       <section className="grid grid-cols-2 gap-2">
         <Link href="/participants" className="btn btn-ghost">
-          Участники
+          {t("home.participants")}
         </Link>
         <Link href="/program" className="btn btn-ghost">
-          Программа / Спикеры
+          {t("home.programSpeakers")}
         </Link>
       </section>
     </main>

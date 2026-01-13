@@ -4,6 +4,8 @@ import { BottomNav } from "@/components/BottomNav";
 import { EventBootstrap } from "@/components/EventBootstrap";
 import { TelegramGate } from "@/components/TelegramGate";
 import { ProfileGate } from "@/components/ProfileGate";
+import { AppSettingsProvider } from "@/components/AppSettingsProvider";
+import { AppToggles } from "@/components/AppToggles";
 
 export const metadata: Metadata = {
   title: "Popova Events",
@@ -18,13 +20,16 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body className="antialiased">
-        <EventBootstrap />
-        <TelegramGate />
-        <ProfileGate />
-        <div className="mx-auto min-h-dvh max-w-3xl px-4 pb-20 pt-4 text-zinc-900">
-          {children}
-        </div>
-        <BottomNav />
+        <AppSettingsProvider>
+          <EventBootstrap />
+          <TelegramGate />
+          <ProfileGate />
+          <AppToggles />
+          <div className="mx-auto min-h-dvh max-w-3xl px-4 pb-20 pt-4 text-[color:var(--foreground)]">
+            {children}
+          </div>
+          <BottomNav />
+        </AppSettingsProvider>
       </body>
     </html>
   );

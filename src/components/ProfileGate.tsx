@@ -4,12 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { tgReady } from "@/lib/tgWebApp";
+import { useAppSettings } from "@/components/AppSettingsProvider";
 
 const ALLOWLIST_PREFIXES = ["/api", "/form", "/admin"];
 
 export function ProfileGate() {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useAppSettings();
   const [checked, setChecked] = useState(false);
   const profileExistsRef = useRef<boolean | null>(null);
 
@@ -47,9 +49,9 @@ export function ProfileGate() {
   if (allowlisted || checked) return null;
 
   return (
-    <div className="fixed inset-0 z-40 bg-white" aria-hidden>
+    <div className="fixed inset-0 z-40 bg-[color:var(--background)]" aria-hidden>
       <div className="mx-auto flex min-h-dvh max-w-3xl items-center justify-center px-4">
-        <div className="text-sm text-zinc-600">Загрузка…</div>
+        <div className="text-sm text-[color:var(--muted-fg)]">{t("gate.loading")}</div>
       </div>
     </div>
   );

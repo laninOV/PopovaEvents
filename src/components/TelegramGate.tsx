@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { getTelegramWebApp } from "@/lib/tgWebApp";
+import { useAppSettings } from "@/components/AppSettingsProvider";
 
 export function TelegramGate() {
+  const { t } = useAppSettings();
   const initialDevId =
     typeof window !== "undefined" ? localStorage.getItem("devTelegramId")?.trim() ?? "" : "";
   const initialAllowed =
@@ -15,16 +17,14 @@ export function TelegramGate() {
   if (allowed) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[color:var(--background)] px-4">
       <div className="card w-full max-w-md p-5">
-        <h1 className="text-2xl">Откройте через Telegram</h1>
-        <p className="mt-2 text-sm text-zinc-600">
-          Mini App работает внутри Telegram. Откройте приложение из бота через кнопку WebApp.
-        </p>
+        <h1 className="text-2xl">{t("gate.telegram.title")}</h1>
+        <p className="mt-2 text-sm text-[color:var(--muted-fg)]">{t("gate.telegram.body")}</p>
 
         <div className="mt-4 border-t border-zinc-200 pt-4">
-          <div className="text-sm font-semibold">Dev режим (браузер)</div>
-          <p className="mt-1 text-sm text-zinc-600">Введите Telegram ID, чтобы включить mock‑авторизацию.</p>
+          <div className="text-sm font-semibold">{t("gate.dev.title")}</div>
+          <p className="mt-1 text-sm text-[color:var(--muted-fg)]">{t("gate.dev.body")}</p>
           <div className="mt-2 flex gap-2">
             <input
               value={devId}
@@ -46,7 +46,7 @@ export function TelegramGate() {
               OK
             </button>
           </div>
-          <div className="mt-2 text-xs text-zinc-500">Нужен `DEV_ALLOW_MOCK_AUTH=1` на backend.</div>
+          <div className="mt-2 text-xs text-[color:var(--muted-fg)]">{t("gate.dev.hint")}</div>
         </div>
       </div>
     </div>
