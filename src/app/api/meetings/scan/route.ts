@@ -38,17 +38,18 @@ export async function POST(req: NextRequest) {
   if (!verified.ok) return NextResponse.json({ error: verified.error }, { status: 400 });
   if (verified.publicId.length < 8) return NextResponse.json({ error: "bad_code" }, { status: 400 });
 
-  const event = verified.eventSlug === defaultSlug ? ensureDefaultEvent() : ensureEventBySlug(verified.eventSlug);
+  const event =
+    verified.eventSlug === defaultSlug ? await ensureDefaultEvent() : await ensureEventBySlug(verified.eventSlug);
   if (!event) return NextResponse.json({ error: "event_not_found" }, { status: 404 });
-  const user = getOrCreateUserByTelegramId(auth.telegramId);
-  ensureEventParticipant(event.id, user.id);
+  const user = await getOrCreateUserByTelegramId(auth.telegramId);
+  await ensureEventParticipant(event.id, user.id);
 
-  const created = createOrGetMeeting(event.id, user.id, verified.publicId);
+  const created = await createOrGetMeeting(event.id, user.id, verified.publicId);
   if (!created.ok) {
     const status = created.error === "not_found" ? 404 : 400;
     return NextResponse.json({ error: created.error }, { status });
   }
 
-  const detail = getMeetingDetail(event.id, user.id, created.meetingId);
+  const detail = await getMeetingDetail(event.id, user.id, created.meetingId);
   return NextResponse.json({ meeting: detail });
 }

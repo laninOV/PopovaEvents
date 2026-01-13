@@ -17,17 +17,17 @@ const SpeakerSchema = z.object({
   sortOrder: z.number().int().min(0).max(10000).optional(),
 });
 
-export function GET(req: NextRequest) {
+export async function GET(req: NextRequest) {
   const auth = getAuthFromRequest(req);
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: 401 });
   if (!isAdminTelegramId(auth.telegramId)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
-  const event = getEventForRequest(req);
+  const event = await getEventForRequest(req);
   if (!event) return NextResponse.json({ error: "event_not_found" }, { status: 404 });
-  const user = getOrCreateUserByTelegramId(auth.telegramId);
-  ensureEventParticipant(event.id, user.id);
+  const user = await getOrCreateUserByTelegramId(auth.telegramId);
+  await ensureEventParticipant(event.id, user.id);
 
-  return NextResponse.json({ speakers: listSpeakers(event.id) });
+  return NextResponse.json({ speakers: await listSpeakers(event.id) });
 }
 
 export async function POST(req: NextRequest) {
@@ -39,12 +39,12 @@ export async function POST(req: NextRequest) {
   const parsed = SpeakerSchema.safeParse(json);
   if (!parsed.success) return NextResponse.json({ error: "bad_request" }, { status: 400 });
 
-  const event = getEventForRequest(req);
+  const event = await getEventForRequest(req);
   if (!event) return NextResponse.json({ error: "event_not_found" }, { status: 404 });
-  const user = getOrCreateUserByTelegramId(auth.telegramId);
-  ensureEventParticipant(event.id, user.id);
+  const user = await getOrCreateUserByTelegramId(auth.telegramId);
+  await ensureEventParticipant(event.id, user.id);
 
-  const id = upsertSpeaker(event.id, {
+  const id = await upsertSpeaker(event.id, {
     id: parsed.data.id,
     name: parsed.data.name,
     photoUrl: parsed.data.photoUrl ?? null,
@@ -55,4 +55,3 @@ export async function POST(req: NextRequest) {
   });
   return NextResponse.json({ ok: true, id });
 }
-

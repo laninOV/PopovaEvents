@@ -13,7 +13,6 @@ export type I18nKey =
   | "home.participants"
   | "home.programSpeakers"
   | "participants.title"
-  | "participants.subtitle"
   | "participants.searchPlaceholder"
   | "participants.empty"
   | "program.title"
@@ -68,8 +67,7 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "home.programSpeakers": "Программа / Спикеры",
 
     "participants.title": "Участники",
-    "participants.subtitle": "Нажмите на карточку, чтобы раскрыть подробности.",
-    "participants.searchPlaceholder": "Поиск по имени / нише / Instagram…",
+    "participants.searchPlaceholder": "Введите имя",
     "participants.empty": "Пока нет участников с заполненным профилем.",
 
     "program.title": "Программа",
@@ -127,8 +125,7 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "home.programSpeakers": "Program / Speakers",
 
     "participants.title": "Participants",
-    "participants.subtitle": "Tap a card to expand details.",
-    "participants.searchPlaceholder": "Search by name / niche / Instagram…",
+    "participants.searchPlaceholder": "Enter name",
     "participants.empty": "No participants with a filled profile yet.",
 
     "program.title": "Program",

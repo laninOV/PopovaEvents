@@ -60,7 +60,6 @@ export default function ParticipantsPage() {
     <main className="space-y-4">
       <header>
         <h1 className="text-2xl">{t("participants.title")}</h1>
-        <p className="mt-1 text-sm text-[color:var(--muted-fg)]">{t("participants.subtitle")}</p>
       </header>
 
       <div className="card p-3">

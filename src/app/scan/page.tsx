@@ -87,12 +87,15 @@ export default function ScanPage() {
 
       <section className="card p-4">
         <div className="text-sm font-medium">Если камера недоступна</div>
+        <div className="mt-1 text-xs text-[color:var(--muted-fg)]">
+          Код берётся из раздела «Мой QR» — его можно скопировать кнопкой «Скопировать код».
+        </div>
         <div className="mt-2 flex gap-2">
           <input
             value={manual}
             onChange={(e) => setManual(e.target.value)}
             className="input flex-1"
-            placeholder="Вставьте код (например, pe:...)"
+            placeholder="Вставьте код"
           />
           <button
             type="button"

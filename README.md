@@ -14,7 +14,9 @@ npm install
 cp .env.example .env
 ```
 
-3) Запустить dev‑сервер:
+3) Поднять Postgres (например, `docker compose up -d postgres`) и указать `POSTGRES_URL`.
+
+4) Запустить dev‑сервер:
 
 ```bash
 npm run dev
@@ -43,7 +45,7 @@ npm run bot
 
 ## Хранилище
 
-- SQLite файл: путь задаётся `DATABASE_PATH` (по умолчанию `./data/dev.sqlite`).
+- Postgres: строка подключения берётся из `POSTGRES_URL` (для Vercel Postgres задаётся автоматически).
 - Загруженные фото сохраняются в `public/uploads` (dev/MVP режим).
 
 ## Ивенты

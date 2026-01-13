@@ -11,13 +11,12 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: stri
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: 401 });
   if (!isAdminTelegramId(auth.telegramId)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
-  const event = getEventForRequest(req);
+  const event = await getEventForRequest(req);
   if (!event) return NextResponse.json({ error: "event_not_found" }, { status: 404 });
-  const user = getOrCreateUserByTelegramId(auth.telegramId);
-  ensureEventParticipant(event.id, user.id);
+  const user = await getOrCreateUserByTelegramId(auth.telegramId);
+  await ensureEventParticipant(event.id, user.id);
 
   const { id } = await ctx.params;
-  deleteScheduleItem(event.id, id);
+  await deleteScheduleItem(event.id, id);
   return NextResponse.json({ ok: true });
 }
-

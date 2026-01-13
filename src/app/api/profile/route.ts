@@ -30,16 +30,16 @@ const ProfileSchema = z.object({
     .optional(),
 });
 
-export function GET(req: NextRequest) {
+export async function GET(req: NextRequest) {
   const auth = getAuthFromRequest(req);
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: 401 });
 
-  const event = getEventForRequest(req);
+  const event = await getEventForRequest(req);
   if (!event) return NextResponse.json({ error: "event_not_found" }, { status: 404 });
-  const user = getOrCreateUserByTelegramId(auth.telegramId);
-  ensureEventParticipant(event.id, user.id);
+  const user = await getOrCreateUserByTelegramId(auth.telegramId);
+  await ensureEventParticipant(event.id, user.id);
 
-  const profile = getProfileByUserId(user.id);
+  const profile = await getProfileByUserId(user.id);
   return NextResponse.json({ profile });
 }
 
@@ -51,12 +51,12 @@ export async function PUT(req: NextRequest) {
   const parsed = ProfileSchema.safeParse(json);
   if (!parsed.success) return NextResponse.json({ error: "bad_request" }, { status: 400 });
 
-  const event = getEventForRequest(req);
+  const event = await getEventForRequest(req);
   if (!event) return NextResponse.json({ error: "event_not_found" }, { status: 404 });
-  const user = getOrCreateUserByTelegramId(auth.telegramId);
-  ensureEventParticipant(event.id, user.id);
+  const user = await getOrCreateUserByTelegramId(auth.telegramId);
+  await ensureEventParticipant(event.id, user.id);
 
-  const profile = upsertProfile(user.id, {
+  const profile = await upsertProfile(user.id, {
     ...parsed.data,
     lastName: parsed.data.lastName ?? null,
     instagram: parsed.data.instagram ?? null,
@@ -65,6 +65,6 @@ export async function PUT(req: NextRequest) {
     helpful: parsed.data.helpful ?? null,
     photoUrl: parsed.data.photoUrl ?? null,
   });
-  setBotUserRegistered(auth.telegramId);
+  await setBotUserRegistered(auth.telegramId);
   return NextResponse.json({ ok: true, profile });
 }

@@ -5,18 +5,17 @@ import { getAuthFromRequest } from "@/lib/telegramAuth";
 
 export const runtime = "nodejs";
 
-export function GET(req: NextRequest) {
+export async function GET(req: NextRequest) {
   const auth = getAuthFromRequest(req);
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: 401 });
 
-  const event = getEventForRequest(req);
+  const event = await getEventForRequest(req);
   if (!event) return NextResponse.json({ error: "event_not_found" }, { status: 404 });
 
-  const user = getOrCreateUserByTelegramId(auth.telegramId);
-  ensureEventParticipant(event.id, user.id);
+  const user = await getOrCreateUserByTelegramId(auth.telegramId);
+  await ensureEventParticipant(event.id, user.id);
 
   const q = req.nextUrl.searchParams.get("q");
-  const participants = listParticipants(event.id, { q, limit: 300 });
+  const participants = await listParticipants(event.id, { q, limit: 300 });
   return NextResponse.json({ participants });
 }
-
