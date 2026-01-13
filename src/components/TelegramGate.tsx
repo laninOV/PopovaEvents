@@ -6,10 +6,13 @@ import { useAppSettings } from "@/components/AppSettingsProvider";
 
 export function TelegramGate() {
   const { t } = useAppSettings();
+  const isDevHost =
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
   const initialDevId =
     typeof window !== "undefined" ? localStorage.getItem("devTelegramId")?.trim() ?? "" : "";
   const initialAllowed =
-    typeof window !== "undefined" ? Boolean(getTelegramWebApp()?.initData || initialDevId) : true;
+    typeof window !== "undefined" ? Boolean(getTelegramWebApp()?.initData || (isDevHost && initialDevId)) : true;
 
   const [allowed] = useState(initialAllowed);
   const [devId, setDevId] = useState(initialDevId);
@@ -22,7 +25,8 @@ export function TelegramGate() {
         <h1 className="text-2xl">{t("gate.telegram.title")}</h1>
         <p className="mt-2 text-sm text-[color:var(--muted-fg)]">{t("gate.telegram.body")}</p>
 
-        <div className="mt-4 border-t border-zinc-200 pt-4">
+        {isDevHost ? (
+          <div className="mt-4 border-t border-zinc-200 pt-4">
           <div className="text-sm font-semibold">{t("gate.dev.title")}</div>
           <p className="mt-1 text-sm text-[color:var(--muted-fg)]">{t("gate.dev.body")}</p>
           <div className="mt-2 flex gap-2">
@@ -47,7 +51,8 @@ export function TelegramGate() {
             </button>
           </div>
           <div className="mt-2 text-xs text-[color:var(--muted-fg)]">{t("gate.dev.hint")}</div>
-        </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );
