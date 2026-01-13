@@ -90,8 +90,19 @@ function splitDisplayName(displayName: string) {
 
 let initPromise: Promise<void> | null = null;
 
+function ensurePostgresUrl() {
+  if (!process.env.POSTGRES_URL) {
+    const fallback = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL || "";
+    if (fallback) process.env.POSTGRES_URL = fallback;
+  }
+  if (!process.env.POSTGRES_URL) {
+    throw new Error("missing_postgres_url");
+  }
+}
+
 async function ensureDb() {
   if (!initPromise) {
+    ensurePostgresUrl();
     initPromise = initDb();
   }
   await initPromise;
