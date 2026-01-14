@@ -70,17 +70,7 @@ export default function HomePage() {
     () => (profile?.instagram ? normalizeInstagramLink(profile.instagram) : null),
     [profile],
   );
-  const missingFields = useMemo(() => {
-    if (!profile) return [];
-    const missing: string[] = [];
-    if (!profile.firstName?.trim()) missing.push(t("form.firstName"));
-    if (!profile.niche?.trim()) missing.push(t("form.niche"));
-    if (!profile.about?.trim()) missing.push(t("form.about"));
-    if (!profile.helpful?.trim()) missing.push(t("form.helpful"));
-    if (!profile.photoUrl) missing.push(t("form.photo"));
-    return missing;
-  }, [profile, t]);
-  const shouldPromptProfile = !profileLoading && (!profile || missingFields.length > 0);
+  const shouldPromptProfile = false;
 
   return (
     <main className="space-y-4">
@@ -88,24 +78,6 @@ export default function HomePage() {
         <div className="text-sm text-[color:var(--muted-fg)]">{me?.event?.name ?? "Ивент"}</div>
         <h1 className="mt-1 text-3xl">{t("home.title", { name })}</h1>
       </header>
-
-      {shouldPromptProfile ? (
-        <section className="card border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          <div className="font-semibold">Заполните профиль</div>
-          {!profile ? (
-            <div className="mt-1 text-sm text-amber-900/80">
-              Это поможет другим участникам узнать о вас больше.
-            </div>
-          ) : missingFields.length > 0 ? (
-            <div className="mt-1 text-sm text-amber-900/80">
-              Не заполнено: {missingFields.join(", ")}.
-            </div>
-          ) : null}
-          <Link href="/form" className="btn btn-ghost mt-3 h-9 px-3 text-xs">
-            {profile ? t("home.editProfile") : t("home.fillProfile")}
-          </Link>
-        </section>
-      ) : null}
 
       <section className="card p-4">
         <div className="flex items-center justify-between">
