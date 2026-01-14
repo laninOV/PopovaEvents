@@ -722,6 +722,91 @@ export async function listParticipants(eventId: string, opts?: { q?: string | nu
   });
 }
 
+export type DbAdminProfile = {
+  userId: string;
+  telegramId: string;
+  publicId: string;
+  joinedAt: string;
+  profile: DbProfile;
+};
+
+export async function listAdminProfiles(eventId: string, opts?: { q?: string | null; limit?: number }) {
+  await ensureDb();
+  const q = (opts?.q ?? "").trim().toLowerCase();
+  const limit = Math.min(Math.max(opts?.limit ?? 500, 1), 1000);
+
+  const result = await sql`
+    SELECT
+      ep.joined_at as joined_at,
+      u.id as user_id,
+      u.telegram_id as telegram_id,
+      u.public_id as public_id,
+      p.photo_url as photo_url,
+      p.first_name as first_name,
+      p.last_name as last_name,
+      p.instagram as instagram,
+      p.niche as niche,
+      p.about as about,
+      p.helpful as helpful,
+      p.updated_at as updated_at
+    FROM event_participants ep
+    JOIN users u ON u.id = ep.user_id
+    JOIN profiles p ON p.user_id = u.id
+    WHERE ep.event_id = ${eventId}
+    ORDER BY ep.joined_at DESC
+    LIMIT ${limit}
+  `;
+
+  const rows = result.rows as Array<{
+    joined_at: string;
+    user_id: string;
+    telegram_id: string;
+    public_id: string;
+    photo_url: string | null;
+    first_name: string;
+    last_name: string | null;
+    instagram: string | null;
+    niche: string | null;
+    about: string | null;
+    helpful: string | null;
+    updated_at: string;
+  }>;
+
+  const items: DbAdminProfile[] = rows.map((r) => ({
+    userId: r.user_id,
+    telegramId: r.telegram_id,
+    publicId: r.public_id,
+    joinedAt: r.joined_at,
+    profile: {
+      userId: r.user_id,
+      photoUrl: r.photo_url,
+      firstName: r.first_name,
+      lastName: r.last_name,
+      instagram: r.instagram,
+      niche: r.niche,
+      about: r.about,
+      helpful: r.helpful,
+      updatedAt: r.updated_at,
+    },
+  }));
+
+  if (!q) return items;
+  return items.filter((p) => {
+    const name = buildDisplayName({ firstName: p.profile.firstName, lastName: p.profile.lastName }).toLowerCase();
+    const niche = (p.profile.niche ?? "").toLowerCase();
+    const instagram = (p.profile.instagram ?? "").toLowerCase();
+    const telegramId = (p.telegramId ?? "").toLowerCase();
+    const publicId = (p.publicId ?? "").toLowerCase();
+    return (
+      name.includes(q) ||
+      niche.includes(q) ||
+      instagram.includes(q) ||
+      telegramId.includes(q) ||
+      publicId.includes(q)
+    );
+  });
+}
+
 export type DbSpeaker = {
   id: string;
   name: string;

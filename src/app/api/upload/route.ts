@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
-import fs from "node:fs";
-import path from "node:path";
 import { getAuthFromRequest } from "@/lib/telegramAuth";
+import { put } from "@vercel/blob";
 
 export const runtime = "nodejs";
 
@@ -28,11 +27,11 @@ export async function POST(req: NextRequest) {
   if (!ext) return NextResponse.json({ error: "unsupported_type" }, { status: 400 });
 
   const bytes = Buffer.from(await file.arrayBuffer());
-  const name = `${crypto.randomUUID()}.${ext}`;
-  const dir = path.join(process.cwd(), "public", "uploads");
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, name), bytes);
+  const name = `profiles/${crypto.randomUUID()}.${ext}`;
+  const blob = await put(name, bytes, {
+    access: "public",
+    contentType: file.type,
+  });
 
-  return NextResponse.json({ url: `/uploads/${name}` });
+  return NextResponse.json({ url: blob.url });
 }
-

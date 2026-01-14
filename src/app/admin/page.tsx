@@ -31,6 +31,9 @@ export default function AdminPage() {
       {allowed ? (
         <section className="card p-4">
           <div className="grid gap-2">
+            <Link href="/admin/profiles" className="btn btn-ghost justify-start">
+              Профили
+            </Link>
             <Link href="/admin/settings" className="btn btn-ghost justify-start">
               Настройки (чат)
             </Link>
@@ -47,4 +50,3 @@ export default function AdminPage() {
     </main>
   );
 }
-

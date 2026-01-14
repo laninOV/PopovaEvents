@@ -46,7 +46,7 @@ npm run bot
 ## Хранилище
 
 - Postgres: строка подключения берётся из `POSTGRES_URL` (для Vercel Postgres задаётся автоматически).
-- Загруженные фото сохраняются в `public/uploads` (dev/MVP режим).
+- Фото сохраняются в Vercel Blob (`BLOB_READ_WRITE_TOKEN`).
 
 ## Ивенты
 
