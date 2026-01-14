@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BrowserQRCodeReader, IScannerControls } from "@zxing/browser";
 import { apiFetch } from "@/lib/api";
 import { tgReady } from "@/lib/tgWebApp";
+import { useAppSettings } from "@/components/AppSettingsProvider";
 
 function getErrorName(err: unknown) {
   if (!err || typeof err !== "object") return null;
@@ -21,6 +23,7 @@ export default function ScanPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [manual, setManual] = useState("");
+  const { t } = useAppSettings();
 
   async function handleCode(code: string) {
     if (busy) return;
@@ -76,6 +79,13 @@ export default function ScanPage() {
           Наведите камеру на QR другого участника — встреча появится у вас обоих.
         </p>
       </header>
+
+      <section className="grid grid-cols-2 gap-2">
+        <Link href="/qr" className="btn btn-primary">
+          {t("home.qr")}
+        </Link>
+        <div className="btn bg-zinc-200 text-zinc-500">{t("home.scan")}</div>
+      </section>
 
       {error ? (
         <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-900">{error}</div>

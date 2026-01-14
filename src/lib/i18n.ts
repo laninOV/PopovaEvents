@@ -9,7 +9,11 @@ export type I18nKey =
   | "home.qr"
   | "home.scan"
   | "home.meetings"
+  | "home.meetingsAll"
+  | "home.meetingsEmpty"
   | "home.chat"
+  | "home.editProfile"
+  | "home.fillProfile"
   | "home.participants"
   | "home.programSpeakers"
   | "participants.title"
@@ -62,7 +66,11 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "home.qr": "Мой QR",
     "home.scan": "Сканировать",
     "home.meetings": "Мои знакомства ({n})",
+    "home.meetingsAll": "Все",
+    "home.meetingsEmpty": "Пока нет знакомств. Отсканируйте QR другого участника.",
     "home.chat": "Чат",
+    "home.editProfile": "Редактировать",
+    "home.fillProfile": "Заполнить профиль",
     "home.participants": "Участники",
     "home.programSpeakers": "Программа / Спикеры",
 
@@ -120,7 +128,11 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "home.qr": "My QR",
     "home.scan": "Scan",
     "home.meetings": "My connections ({n})",
+    "home.meetingsAll": "All",
+    "home.meetingsEmpty": "No connections yet. Scan another participant's QR.",
     "home.chat": "Chat",
+    "home.editProfile": "Edit profile",
+    "home.fillProfile": "Fill profile",
     "home.participants": "Participants",
     "home.programSpeakers": "Program / Speakers",
 
