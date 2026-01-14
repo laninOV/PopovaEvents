@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import "./globals.css";
 import { BottomNav } from "@/components/BottomNav";
@@ -6,11 +6,17 @@ import { EventBootstrap } from "@/components/EventBootstrap";
 import { TelegramGate } from "@/components/TelegramGate";
 import { ProfileGate } from "@/components/ProfileGate";
 import { AppSettingsProvider } from "@/components/AppSettingsProvider";
-import { AppToggles } from "@/components/AppToggles";
 
 export const metadata: Metadata = {
   title: "Popova Events",
   description: "Telegram Mini App для оффлайн-ивентов",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
@@ -27,7 +33,6 @@ export default function RootLayout({
           <TelegramGate />
           <ProfileGate />
           <div className="mx-auto min-h-dvh max-w-3xl px-4 pb-20 pt-4 text-[color:var(--foreground)]">
-            <AppToggles />
             {children}
           </div>
           <BottomNav />

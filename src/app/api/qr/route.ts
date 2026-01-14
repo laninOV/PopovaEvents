@@ -14,10 +14,16 @@ export async function GET(req: NextRequest) {
   if (!event) return NextResponse.json({ error: "event_not_found" }, { status: 404 });
 
   const secret = process.env.QR_SECRET?.trim();
-  if (!secret) return NextResponse.json({ error: "missing_qr_secret" }, { status: 500 });
+  const allowUnsigned = process.env.ALLOW_UNSIGNED_QR === "1";
 
   const user = await getOrCreateUserByTelegramId(auth.telegramId);
   await ensureEventParticipant(event.id, user.id);
+
+  if (!secret) {
+    if (!allowUnsigned) return NextResponse.json({ error: "missing_qr_secret" }, { status: 500 });
+    const payload = `pe:${event.slug}:${user.publicId}`;
+    return NextResponse.json({ payload, ts: null });
+  }
 
   const ts = Date.now();
   const payload = signQrPayload(event.slug, user.publicId, ts, secret);

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { tgReady } from "@/lib/tgWebApp";
+import { getTelegramUnsafeUser, tgReady } from "@/lib/tgWebApp";
 import { useAppSettings } from "@/components/AppSettingsProvider";
 
 type Profile = {
@@ -31,6 +31,8 @@ export default function FormPage() {
   const [about, setAbout] = useState("");
   const [helpful, setHelpful] = useState("");
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const tgUser = getTelegramUnsafeUser();
+  const fallbackPhotoUrl = photoUrl ?? tgUser?.photo_url ?? null;
 
   useEffect(() => {
     tgReady();
@@ -124,9 +126,13 @@ export default function FormPage() {
               <div className="text-xs text-[color:var(--muted-fg)]">
                 {uploading ? t("form.photoUploading") : t("form.photoHint")}
               </div>
-              {photoUrl ? (
+              {fallbackPhotoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={photoUrl} alt="Фото профиля" className="mt-2 h-20 w-20 rounded-2xl object-cover" />
+                <img
+                  src={fallbackPhotoUrl}
+                  alt="Фото профиля"
+                  className="mt-2 h-20 w-20 rounded-2xl object-cover"
+                />
               ) : null}
             </label>
 

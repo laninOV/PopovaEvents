@@ -39,6 +39,7 @@ export default function ProgramPage() {
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [now, setNow] = useState<Date>(() => new Date());
   const { t } = useAppSettings();
 
   useEffect(() => {
@@ -50,6 +51,11 @@ export default function ProgramPage() {
       })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : "Ошибка"))
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60 * 1000);
+    return () => clearInterval(id);
   }, []);
 
   const speakersById = useMemo(() => new Map(speakers.map((s) => [s.id, s.name])), [speakers]);
@@ -103,10 +109,15 @@ export default function ProgramPage() {
               end ? `–${end.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}` : ""
             }`;
             const speakerName = it.speakerId ? speakersById.get(it.speakerId) : null;
+            const fallbackEnd = end ?? new Date(start.getTime() + 60 * 60 * 1000);
+            const isCurrent = now >= start && now < fallbackEnd;
 
             return (
-              <li key={it.id} className="card p-4">
-                <div className="text-sm text-zinc-600">{time}</div>
+              <li key={it.id} className={`card p-4 ${isCurrent ? "program-current" : ""}`}>
+                <div className="flex items-center justify-between text-sm text-zinc-600">
+                  <div>{time}</div>
+                  {isCurrent ? <span className="program-current-badge">Сейчас</span> : null}
+                </div>
                 <div className="mt-1 text-base font-semibold">{it.title}</div>
                 {speakerName ? <div className="mt-0.5 text-sm text-zinc-600">{speakerName}</div> : null}
                 {it.location ? <div className="mt-0.5 text-sm text-zinc-600">{it.location}</div> : null}

@@ -656,6 +656,40 @@ export type DbParticipant = {
   profile: DbProfile;
 };
 
+type DemoSlot = {
+  title: string;
+  speakerName: string;
+  role: string;
+  format: string;
+};
+
+const DEMO_SCHEDULE: DemoSlot[] = [
+  { title: "Открытие ночи идей", speakerName: "Лира Сандерс", role: "куратор “ночных конференций”", format: "интро + правила + быстрый нетворкинг (3 знакомства за 5 минут)" },
+  { title: "Как мозг принимает решения в 3 часа ночи", speakerName: "д-р Марк Вельтман", role: "нейропсихолог-экспериментатор", format: "лекция + мини-тест на внимание" },
+  { title: "Уют как технология: почему нам важны ритуалы", speakerName: "Эйва Норр", role: "исследовательница поведенческих привычек", format: "talk + “собери свой ритуал” (упражнение)" },
+  { title: "Микро-креатив: как генерить идеи, когда пусто", speakerName: "Реми Кай", role: "автор “1000 маленьких концептов”", format: "воркшоп: 30 идей за 30 минут" },
+  { title: "Тёмная сторона продуктивности: когда KPI вредят", speakerName: "Саймон Крэддок", role: "консультант по выгоранию", format: "кейсы + Q&A" },
+  { title: "Музыка и концентрация: что реально работает", speakerName: "Мина Д'Орсо", role: "саунд-дизайнер для “фокус-пространств”", format: "прослушивание примеров + разбор" },
+  { title: "Утренний перезапуск: тело как интерфейс", speakerName: "Кай Рэнд", role: "тренер по восстановлению и мобильности", format: "лёгкая зарядка + дыхание (без фанатизма)" },
+  { title: "Кофе, чай, вода: личная химия бодрости", speakerName: "Нора Лин", role: "нутрициолог-практик", format: "лекция + “карта энергии” на день" },
+  { title: "Планирование без ненависти: система на 15 минут", speakerName: "Оливер Брик", role: "автор минималистичных методик", format: "воркшоп: собрать свой шаблон недели" },
+  { title: "Как говорить так, чтобы вас слушали", speakerName: "Лиана Коваль", role: "тренер по речи и структуре выступлений", format: "практика: “1 мысль — 1 минута”" },
+  { title: "Дизайн смысла: как делать понятные интерфейсы", speakerName: "Джун Пак", role: "продуктовый дизайнер-стратег", format: "разбор примеров + чек-лист" },
+  { title: "Истории, которые продают: сторителлинг без клише", speakerName: "Рафаэль Грин", role: "сценарист и редактор питчей", format: "“до/после” + упражнения" },
+  { title: "Обед-сессия: быстрые знакомства по интересам", speakerName: "Мэй Соло", role: "фасилитатор сообществ", format: "round-tables (5 тем на выбор)" },
+  { title: "Как учиться быстрее и помнить дольше", speakerName: "профессор Эллиот Сторм", role: "когнитивист (вымышленный)", format: "техники + практика “вспомни через 10 минут”" },
+  { title: "Деньги как поведение: почему бюджеты не работают", speakerName: "Ханна Вирк", role: "поведенческий экономист", format: "лекция + разбор ошибок" },
+  { title: "Переговоры без токсичности: мягко и эффективно", speakerName: "Дамир Роше", role: "медиатор и переговорщик", format: "ролевые мини-сцены" },
+  { title: "Команды: как не разрушать мотивацию", speakerName: "Ирис Нель", role: "руководительница “анти-микроменеджмента”", format: "кейсы + “фразы-замены”" },
+  { title: "Ошибки как стратегия: строим систему экспериментов", speakerName: "Томас Юн", role: "продакт-экспериментатор", format: "шаблон эксперимента + примеры" },
+  { title: "Спокойные технологии: цифровая гигиена без радикализма", speakerName: "Селин Мора", role: "исследовательница внимания", format: "аудит приложений + план “минус 20% шума”" },
+  { title: "Творческая смелость: как делать, даже если страшно", speakerName: "Пабло Хейз", role: "арт-директор и ментор", format: "упражнения на “плохой первый черновик”" },
+  { title: "Город будущего: как мы будем жить через 20 лет", speakerName: "д-р Сайя Ким", role: "урбанист-футуролог", format: "лекция + голосование за сценарии" },
+  { title: "Этика решений: что делать, когда нет идеального выбора", speakerName: "Рут Эверетт", role: "философ-практик", format: "разбор дилемм + дискуссия" },
+  { title: "Ночная лаборатория идей: собери проект за час", speakerName: "Нико Лаваль", role: "фасилитатор хакатонов", format: "команды по 3–4 человека, быстрый прототип" },
+  { title: "Финал: шоу-питчи + награды “за дерзость”", speakerName: "Вэл Картер", role: "ведущий и “главный по финалу”", format: "питчи 60 секунд + закрытие + фото/музыка" },
+];
+
 export async function listParticipants(eventId: string, opts?: { q?: string | null; limit?: number }) {
   await ensureDb();
   const q = (opts?.q ?? "").trim().toLowerCase();
@@ -720,6 +754,71 @@ export async function listParticipants(eventId: string, opts?: { q?: string | nu
     const instagram = (p.profile.instagram ?? "").toLowerCase();
     return name.includes(q) || niche.includes(q) || instagram.includes(q);
   });
+}
+
+const seededEvents = new Set<string>();
+
+export async function seedDemoIfEmpty(eventId: string) {
+  if (process.env.SEED_DEMO !== "1") return;
+  if (seededEvents.has(eventId)) return;
+  await ensureDb();
+
+  const scheduleCount = await sql`SELECT COUNT(*) as c FROM schedule_items WHERE event_id = ${eventId}`;
+  const countRow = scheduleCount.rows[0] as { c: string };
+  if (Number(countRow.c) > 0) {
+    seededEvents.add(eventId);
+    return;
+  }
+
+  const speakerIds = new Map<string, string>();
+  const ts = nowIso();
+  for (const [index, slot] of DEMO_SCHEDULE.entries()) {
+    const speakerId = newId();
+    speakerIds.set(slot.speakerName, speakerId);
+    await sql`
+      INSERT INTO speakers (id, event_id, name, photo_url, topic, bio, socials_json, sort_order, created_at, updated_at)
+      VALUES (
+        ${speakerId},
+        ${eventId},
+        ${slot.speakerName},
+        ${null},
+        ${slot.role},
+        ${`Формат: ${slot.format}`},
+        ${stringifyJsonArray([])},
+        ${index},
+        ${ts},
+        ${ts}
+      )
+    `;
+  }
+
+  const now = new Date();
+  const base = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  for (const [index, slot] of DEMO_SCHEDULE.entries()) {
+    const startsAt = new Date(base.getTime() + index * 60 * 60 * 1000).toISOString();
+    const endsAt = new Date(base.getTime() + (index + 1) * 60 * 60 * 1000).toISOString();
+    const speakerId = speakerIds.get(slot.speakerName) ?? null;
+    await sql`
+      INSERT INTO schedule_items (
+        id, event_id, starts_at, ends_at, title, description, speaker_id, location, sort_order, created_at, updated_at
+      )
+      VALUES (
+        ${newId()},
+        ${eventId},
+        ${startsAt},
+        ${endsAt},
+        ${slot.title},
+        ${`Формат: ${slot.format}`},
+        ${speakerId},
+        ${null},
+        ${index},
+        ${ts},
+        ${ts}
+      )
+    `;
+  }
+
+  seededEvents.add(eventId);
 }
 
 export type DbAdminProfile = {

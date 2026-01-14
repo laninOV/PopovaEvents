@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { tgReady } from "@/lib/tgWebApp";
+import { getTelegramUnsafeUser, tgReady } from "@/lib/tgWebApp";
 
 type Profile = {
   firstName: string;
@@ -39,6 +39,9 @@ export default function ProfilePage() {
     return [profile.firstName, profile.lastName].filter(Boolean).join(" ");
   }, [profile]);
 
+  const tgUser = getTelegramUnsafeUser();
+  const fallbackPhotoUrl = profile?.photoUrl ?? tgUser?.photo_url ?? null;
+
   const instagramHref = useMemo(() => (profile?.instagram ? normalizeInstagramLink(profile.instagram) : null), [profile]);
 
   return (
@@ -65,9 +68,13 @@ export default function ProfilePage() {
         <section className="card p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3">
-              {profile.photoUrl ? (
+              {fallbackPhotoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={profile.photoUrl} alt={displayName ?? "Фото"} className="h-16 w-16 rounded-2xl object-cover" />
+                <img
+                  src={fallbackPhotoUrl}
+                  alt={displayName ?? "Фото"}
+                  className="h-16 w-16 rounded-2xl object-cover"
+                />
               ) : (
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted text-sm text-zinc-600">
                   Фото
@@ -117,4 +124,3 @@ export default function ProfilePage() {
     </main>
   );
 }
-

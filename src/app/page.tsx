@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api";
 import { getTelegramUnsafeUser, tgReady } from "@/lib/tgWebApp";
 import { useAppSettings } from "@/components/AppSettingsProvider";
 import type { DbMeetingListItem } from "@/lib/db";
+import { AppToggles } from "@/components/AppToggles";
 
 type MeResponse = {
   user: { publicId: string };
@@ -60,6 +61,7 @@ export default function HomePage() {
 
   const tgUser = getTelegramUnsafeUser();
   const name = me?.profile?.displayName || tgUser?.first_name || "участник";
+  const fallbackPhotoUrl = profile?.photoUrl ?? tgUser?.photo_url ?? null;
   const displayName = useMemo(() => {
     if (!profile) return null;
     return [profile.firstName, profile.lastName].filter(Boolean).join(" ");
@@ -108,18 +110,21 @@ export default function HomePage() {
       <section className="card p-4">
         <div className="flex items-center justify-between">
           <div className="text-sm font-semibold">Мой профиль</div>
-          <Link href="/form" className="btn btn-ghost h-8 px-3 text-xs">
-            {profile ? t("home.editProfile") : t("home.fillProfile")}
-          </Link>
+          <div className="flex items-center gap-2">
+            <AppToggles />
+            <Link href="/form" className="btn btn-ghost h-8 px-3 text-xs">
+              {profile ? t("home.editProfile") : t("home.fillProfile")}
+            </Link>
+          </div>
         </div>
         {!profile ? (
           <div className="mt-3 text-sm text-[color:var(--muted-fg)]">Профиль не заполнен.</div>
         ) : (
           <div className="mt-3 flex items-start gap-3">
-            {profile.photoUrl ? (
+            {fallbackPhotoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={profile.photoUrl}
+                src={fallbackPhotoUrl}
                 alt={displayName ?? "Фото"}
                 className="h-16 w-16 rounded-2xl object-cover"
               />
@@ -148,6 +153,9 @@ export default function HomePage() {
             </div>
           </div>
         )}
+        <Link href="/chat" className="btn btn-ghost mt-4 w-full">
+          {t("home.chat")}
+        </Link>
       </section>
 
       <section className="card p-3">
@@ -174,10 +182,6 @@ export default function HomePage() {
           </ul>
         )}
       </section>
-
-      <Link href="/chat" className="btn btn-ghost">
-        {t("home.chat")}
-      </Link>
 
       {error ? (
         <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-900">{error}</div>

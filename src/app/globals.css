@@ -212,7 +212,7 @@ h4 {
 .app-toggles {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 
 .app-toggles-inner {
@@ -224,4 +224,19 @@ h4 {
   background: color-mix(in srgb, var(--card) 70%, transparent);
   backdrop-filter: blur(16px) saturate(140%);
   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.program-current {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--card));
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+}
+
+.program-current-badge {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 85%, transparent);
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
 }
