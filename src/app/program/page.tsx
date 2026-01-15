@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { tgReady } from "@/lib/tgWebApp";
 import { useAppSettings } from "@/components/AppSettingsProvider";
@@ -41,6 +41,8 @@ export default function ProgramPage() {
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState<Date>(() => new Date());
   const { t } = useAppSettings();
+  const currentRef = useRef<HTMLLIElement | null>(null);
+  const lastScrollIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     tgReady();
@@ -59,6 +61,23 @@ export default function ProgramPage() {
   }, []);
 
   const speakersById = useMemo(() => new Map(speakers.map((s) => [s.id, s.name])), [speakers]);
+  const currentItemId = useMemo(() => {
+    for (const it of items) {
+      const start = new Date(it.startsAt);
+      const end = it.endsAt ? new Date(it.endsAt) : null;
+      const fallbackEnd = end ?? new Date(start.getTime() + 60 * 60 * 1000);
+      if (now >= start && now < fallbackEnd) return it.id;
+    }
+    return null;
+  }, [items, now]);
+
+  useEffect(() => {
+    if (tab !== "program") return;
+    if (!currentItemId) return;
+    if (lastScrollIdRef.current === currentItemId) return;
+    lastScrollIdRef.current = currentItemId;
+    currentRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [tab, currentItemId]);
 
   return (
     <main className="space-y-4">
@@ -113,7 +132,11 @@ export default function ProgramPage() {
             const isCurrent = now >= start && now < fallbackEnd;
 
             return (
-              <li key={it.id} className={`card p-4 ${isCurrent ? "program-current" : ""}`}>
+              <li
+                key={it.id}
+                ref={isCurrent ? currentRef : null}
+                className={`card p-4 ${isCurrent ? "program-current" : ""}`}
+              >
                 <div className="flex items-center justify-between text-sm text-zinc-600">
                   <div>{time}</div>
                   {isCurrent ? <span className="program-current-badge">Сейчас</span> : null}

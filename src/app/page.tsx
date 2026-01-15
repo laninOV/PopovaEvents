@@ -35,7 +35,6 @@ function normalizeInstagramLink(value: string) {
 export default function HomePage() {
   const [me, setMe] = useState<MeResponse | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [profileLoading, setProfileLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [meetings, setMeetings] = useState<DbMeetingListItem[]>([]);
   const [meetingsLoading, setMeetingsLoading] = useState(true);
@@ -48,8 +47,7 @@ export default function HomePage() {
       .catch((e: unknown) => setError(e instanceof Error ? e.message : "Ошибка загрузки"));
     apiFetch<{ profile: Profile | null }>("/api/profile")
       .then((r) => setProfile(r.profile))
-      .catch(() => setProfile(null))
-      .finally(() => setProfileLoading(false));
+      .catch(() => setProfile(null));
   }, []);
 
   useEffect(() => {
@@ -69,7 +67,6 @@ export default function HomePage() {
     () => (profile?.instagram ? normalizeInstagramLink(profile.instagram) : null),
     [profile],
   );
-  const shouldPromptProfile = false;
 
   return (
     <main className="space-y-4">
