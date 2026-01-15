@@ -60,7 +60,7 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "nav.profile": "Профиль",
     "nav.scan": "Сканировать",
     "nav.participants": "Участники",
-    "nav.program": "Программа",
+    "nav.program": "Спикеры",
 
     "home.title": "Привет, {name}",
     "home.qr": "Мой QR",
@@ -122,7 +122,7 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "nav.profile": "Profile",
     "nav.scan": "Scan",
     "nav.participants": "Participants",
-    "nav.program": "Program",
+    "nav.program": "Speakers",
 
     "home.title": "Hi, {name}",
     "home.qr": "My QR",
