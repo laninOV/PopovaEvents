@@ -209,22 +209,6 @@ h4 {
   letter-spacing: 0.02em;
 }
 
-.app-toggles {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 0;
-}
-
-.app-toggles-inner {
-  display: inline-flex;
-  gap: 8px;
-  padding: 6px;
-  border-radius: 18px;
-  border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
-  background: color-mix(in srgb, var(--card) 70%, transparent);
-  backdrop-filter: blur(16px) saturate(140%);
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
 
 .program-current {
   border-color: color-mix(in srgb, var(--accent) 55%, transparent);

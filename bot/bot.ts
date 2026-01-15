@@ -1,5 +1,6 @@
 import "dotenv/config";
-import { Bot, InlineKeyboard, Keyboard } from "grammy";
+import { Bot, InlineKeyboard, InputFile, Keyboard } from "grammy";
+import { fileURLToPath } from "node:url";
 import { upsertBotUser } from "../src/lib/db";
 
 const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
@@ -7,9 +8,10 @@ const webAppUrl = process.env.WEBAPP_URL?.trim();
 const defaultEventSlug = process.env.DEFAULT_EVENT_SLUG?.trim() || "default";
 const welcomeText =
   process.env.WELCOME_TEXT?.trim() ||
-  "Добро пожаловать! Здесь вы сможете зарегистрироваться на ивент и знакомиться через QR.";
+  "Business Lady's Club — пространство нетворкинга, идей и событий. Здесь вы получите личный QR, сможете сканировать других участников и вести заметки после встреч.";
 const contactText =
   process.env.CONTACT_TEXT?.trim() || process.env.CONTACT_URL?.trim() || "Контакт: напишите организатору.";
+const startImagePath = fileURLToPath(new URL("./assets/start.png", import.meta.url));
 
 if (!token) throw new Error("Missing TELEGRAM_BOT_TOKEN");
 if (!webAppUrl) throw new Error("Missing WEBAPP_URL");
@@ -30,13 +32,6 @@ function buildWebAppUrl(eventSlug: string) {
   return url.toString();
 }
 
-function buildWebAppUrlToPath(eventSlug: string, pathname: string) {
-  const url = new URL(baseWebAppUrl);
-  url.pathname = pathname;
-  url.searchParams.set("event", eventSlug);
-  return url.toString();
-}
-
 function isHttpsUrl(url: string) {
   return url.startsWith("https://");
 }
@@ -46,9 +41,8 @@ const bot = new Bot(token);
 bot.command("start", async (ctx) => {
   const eventSlug = parseEventSlugFromStartParam(ctx.message?.text ?? "") || defaultEventSlug;
   const launchUrl = buildWebAppUrl(eventSlug);
-  const registerUrl = buildWebAppUrlToPath(eventSlug, "/form");
 
-  if (!isHttpsUrl(launchUrl) || !isHttpsUrl(registerUrl)) {
+  if (!isHttpsUrl(launchUrl)) {
     await ctx.reply(
       `WEBAPP_URL должен быть HTTPS — Telegram не принимает WebApp кнопку с HTTP.\n\n` +
         `Сейчас: ${launchUrl}\n\n` +
@@ -66,16 +60,11 @@ bot.command("start", async (ctx) => {
     });
   }
 
-  const inline = new InlineKeyboard()
-    .webApp("Регистрация", registerUrl)
-    .row()
-    .text("Контакт", "contact")
-    .row()
-    .webApp("Открыть приложение", launchUrl);
+  const inline = new InlineKeyboard().webApp("Start", launchUrl);
+  const reply = new Keyboard().webApp("Start", launchUrl).resized();
 
-  const reply = new Keyboard().webApp("Запустить приложение", launchUrl).resized();
-
-  await ctx.reply(`${welcomeText}\n\nИвент: ${eventSlug}\n\nМожно: /start <код_ивента>`, {
+  await ctx.replyWithPhoto(new InputFile(startImagePath), {
+    caption: welcomeText,
     reply_markup: inline,
   });
   await ctx.reply("Кнопка запуска доступна внизу в клавиатуре.", { reply_markup: reply });

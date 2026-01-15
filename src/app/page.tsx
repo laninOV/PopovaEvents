@@ -6,7 +6,6 @@ import { apiFetch } from "@/lib/api";
 import { getTelegramUnsafeUser, tgReady } from "@/lib/tgWebApp";
 import { useAppSettings } from "@/components/AppSettingsProvider";
 import type { DbMeetingListItem } from "@/lib/db";
-import { AppToggles } from "@/components/AppToggles";
 
 type MeResponse = {
   user: { publicId: string };
@@ -82,12 +81,9 @@ export default function HomePage() {
       <section className="card p-4">
         <div className="flex items-center justify-between">
           <div className="text-sm font-semibold">Мой профиль</div>
-          <div className="flex items-center gap-2">
-            <AppToggles />
-            <Link href="/form" className="btn btn-ghost h-8 px-3 text-xs">
-              {profile ? t("home.editProfile") : t("home.fillProfile")}
-            </Link>
-          </div>
+          <Link href="/form" className="btn btn-ghost h-8 px-3 text-xs">
+            {profile ? t("home.editProfile") : t("home.fillProfile")}
+          </Link>
         </div>
         {!profile ? (
           <div className="mt-3 text-sm text-[color:var(--muted-fg)]">Профиль не заполнен.</div>
