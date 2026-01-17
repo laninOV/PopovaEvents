@@ -6,7 +6,6 @@ import { EventBootstrap } from "@/components/EventBootstrap";
 import { TelegramGate } from "@/components/TelegramGate";
 import { ProfileGate } from "@/components/ProfileGate";
 import { AppSettingsProvider } from "@/components/AppSettingsProvider";
-import { AppToggles } from "@/components/AppToggles";
 
 export const metadata: Metadata = {
   title: "Mini App",
@@ -34,7 +33,6 @@ export default function RootLayout({
           <TelegramGate />
           <ProfileGate />
           <div className="mx-auto min-h-dvh max-w-3xl px-4 pb-20 pt-4 text-[color:var(--foreground)]">
-            <AppToggles />
             {children}
           </div>
           <BottomNav />

@@ -7,6 +7,7 @@ import { BrowserQRCodeReader, IScannerControls } from "@zxing/browser";
 import { apiFetch } from "@/lib/api";
 import { tgReady } from "@/lib/tgWebApp";
 import { useAppSettings } from "@/components/AppSettingsProvider";
+import { AppToggles } from "@/components/AppToggles";
 
 function getErrorName(err: unknown) {
   if (!err || typeof err !== "object") return null;
@@ -79,11 +80,14 @@ export default function ScanPage() {
 
   return (
     <main className="space-y-4">
-      <header>
-        <h1 className="text-2xl">Сканировать QR-код</h1>
+      <header className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl">Сканировать QR-код</h1>
         <p className="mt-1 text-sm text-zinc-600">
           Наведите камеру на QR другого участника — встреча появится у вас обоих.
         </p>
+        </div>
+        <AppToggles />
       </header>
 
       <section className="grid grid-cols-2 gap-2">

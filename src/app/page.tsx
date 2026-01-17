@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { getTelegramUnsafeUser, tgReady } from "@/lib/tgWebApp";
 import { useAppSettings } from "@/components/AppSettingsProvider";
+import { AppToggles } from "@/components/AppToggles";
 import type { DbMeetingListItem } from "@/lib/db";
 
 type MeResponse = {
@@ -69,8 +70,9 @@ export default function HomePage() {
 
   return (
     <main className="space-y-4">
-      <header>
+      <header className="flex items-center justify-between">
         <h1 className="text-2xl">{t("nav.home")}</h1>
+        <AppToggles />
       </header>
 
       <section className="card p-4">

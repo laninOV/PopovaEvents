@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { tgReady } from "@/lib/tgWebApp";
 import { useAppSettings } from "@/components/AppSettingsProvider";
+import { AppToggles } from "@/components/AppToggles";
 
 type Participant = {
   userId: string;
@@ -58,8 +59,9 @@ export default function ParticipantsPage() {
 
   return (
     <main className="space-y-4">
-      <header>
+      <header className="flex items-center justify-between">
         <h1 className="text-2xl">{t("participants.title")}</h1>
+        <AppToggles />
       </header>
 
       <div className="card p-3">

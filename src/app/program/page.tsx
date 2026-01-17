@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { tgReady } from "@/lib/tgWebApp";
 import { useAppSettings } from "@/components/AppSettingsProvider";
+import { AppToggles } from "@/components/AppToggles";
 
 type Speaker = {
   id: string;
@@ -190,8 +191,9 @@ export default function ProgramPage() {
 
   return (
     <main className="space-y-4">
-      <header>
+      <header className="flex items-center justify-between">
         <h1 className="text-2xl">{t("program.title")}</h1>
+        <AppToggles />
       </header>
 
       <div className="card p-2">
