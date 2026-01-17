@@ -33,8 +33,8 @@ export default function RootLayout({
           <EventBootstrap />
           <TelegramGate />
           <ProfileGate />
-          <AppToggles />
           <div className="mx-auto min-h-dvh max-w-3xl px-4 pb-20 pt-4 text-[color:var(--foreground)]">
+            <AppToggles />
             {children}
           </div>
           <BottomNav />

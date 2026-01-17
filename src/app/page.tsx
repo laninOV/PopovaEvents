@@ -69,7 +69,7 @@ export default function HomePage() {
 
   return (
     <main className="space-y-4">
-      <header className="card p-4">
+      <header>
         <h1 className="text-2xl">{t("nav.home")}</h1>
       </header>
 
