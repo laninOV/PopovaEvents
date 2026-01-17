@@ -39,6 +39,7 @@ export type I18nKey =
   | "program.tab.speakers"
   | "program.badge.now"
   | "program.badge.next"
+  | "program.badge.closest"
   | "program.empty"
   | "speakers.empty"
   | "chat.title"
@@ -115,6 +116,7 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "program.tab.speakers": "Спикеры",
     "program.badge.now": "Сейчас",
     "program.badge.next": "Далее",
+    "program.badge.closest": "Ближайшее",
     "program.empty": "Программа появится здесь позже.",
     "speakers.empty": "Спикеры появятся здесь позже.",
 
@@ -194,6 +196,7 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "program.tab.speakers": "Speakers",
     "program.badge.now": "Now",
     "program.badge.next": "Next",
+    "program.badge.closest": "Closest",
     "program.empty": "The schedule will appear here later.",
     "speakers.empty": "Speakers will appear here later.",
 

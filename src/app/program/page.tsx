@@ -104,6 +104,7 @@ export default function ProgramPage() {
 
   const speakersById = useMemo(() => new Map(speakers.map((s) => [s.id, s.name])), [speakers]);
   const focus = useMemo(() => {
+    const speakerIdSet = new Set(speakers.map((s) => s.id));
     const parsed = items
       .map((it) => {
         const start = parseScheduleDateTime(it.startsAt);
@@ -128,22 +129,22 @@ export default function ProgramPage() {
     }
 
     const focused = current ?? next ?? (parsed.length ? parsed[parsed.length - 1] : null);
-    const kind: "current" | "next" | "past" | null = current ? "current" : next ? "next" : focused ? "past" : null;
+    const kind: "current" | "next" | "closest" | null = current ? "current" : next ? "next" : focused ? "closest" : null;
 
     const focusedWithSpeaker =
-      focused?.it.speakerId
+      focused?.it.speakerId && speakerIdSet.has(focused.it.speakerId)
         ? focused
         : (kind === "next" ? next : null) ||
-          parsed.find((x) => x.start > now && x.it.speakerId) ||
-          parsed.find((x) => x.it.speakerId) ||
+          parsed.find((x) => x.start > now && x.it.speakerId && speakerIdSet.has(x.it.speakerId)) ||
+          parsed.find((x) => x.it.speakerId && speakerIdSet.has(x.it.speakerId)) ||
           null;
 
     return {
       kind,
       itemId: focused?.it.id ?? null,
-      speakerId: focusedWithSpeaker?.it.speakerId ?? null,
+      speakerId: focusedWithSpeaker?.it.speakerId ?? speakers[0]?.id ?? null,
     };
-  }, [items, now]);
+  }, [items, now, speakers]);
 
   function scrollToEl(el: HTMLElement | null) {
     if (!el) return;
@@ -244,6 +245,7 @@ export default function ProgramPage() {
             const fallbackEnd = start ? end ?? new Date(start.getTime() + 60 * 60 * 1000) : null;
             const isCurrent = start ? now >= start && now < (fallbackEnd ?? start) : false;
             const isFocusNext = !isCurrent && focus.kind === "next" && focus.itemId === it.id;
+            const isFocusClosest = !isCurrent && focus.kind === "closest" && focus.itemId === it.id;
 
             return (
               <li
@@ -252,12 +254,13 @@ export default function ProgramPage() {
                 ref={(el) => {
                   programRefs.current[it.id] = el;
                 }}
-                className={`card p-4 ${isCurrent ? "program-current" : isFocusNext ? "program-next" : ""}`}
+                className={`card p-4 ${isCurrent ? "program-current" : isFocusNext || isFocusClosest ? "program-next" : ""}`}
               >
                 <div className="flex items-center justify-between text-sm text-zinc-600">
                   <div>{time}</div>
                   {isCurrent ? <span className="program-current-badge">{t("program.badge.now")}</span> : null}
                   {isFocusNext ? <span className="program-next-badge">{t("program.badge.next")}</span> : null}
+                  {isFocusClosest ? <span className="program-next-badge">{t("program.badge.closest")}</span> : null}
                 </div>
                 <div className="mt-1 text-base font-semibold">{it.title}</div>
                 {speakerName ? <div className="mt-0.5 text-sm text-zinc-600">{speakerName}</div> : null}
@@ -270,7 +273,7 @@ export default function ProgramPage() {
       ) : (
         <ul className="space-y-2">
           {speakers.map((s) => {
-            const isFocused = focus.speakerId === s.id && (focus.kind === "current" || focus.kind === "next");
+            const isFocused = focus.speakerId === s.id && (focus.kind === "current" || focus.kind === "next" || focus.kind === "closest");
             return (
               <li
                 key={s.id}
@@ -278,9 +281,7 @@ export default function ProgramPage() {
                 ref={(el) => {
                   speakerRefs.current[s.id] = el;
                 }}
-                className={`card p-4 ${isFocused && focus.kind === "current" ? "program-current" : ""} ${
-                  isFocused && focus.kind === "next" ? "program-next" : ""
-                }`}
+                className={`card p-4 ${isFocused && focus.kind === "current" ? "program-current" : ""} ${isFocused && (focus.kind === "next" || focus.kind === "closest") ? "program-next" : ""}`}
               >
                 <details
                   open={expandedSpeakerId === s.id}
@@ -306,6 +307,9 @@ export default function ProgramPage() {
                         ) : null}
                         {isFocused && focus.kind === "next" ? (
                           <span className="program-next-badge">{t("program.badge.next")}</span>
+                        ) : null}
+                        {isFocused && focus.kind === "closest" ? (
+                          <span className="program-next-badge">{t("program.badge.closest")}</span>
                         ) : null}
                       </div>
                       {s.topic ? <div className="mt-0.5 text-sm text-zinc-600">{s.topic}</div> : null}
