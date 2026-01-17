@@ -42,7 +42,10 @@ export default function ProgramPage() {
   const [now, setNow] = useState<Date>(() => new Date());
   const { t } = useAppSettings();
   const currentRef = useRef<HTMLLIElement | null>(null);
-  const lastScrollIdRef = useRef<string | null>(null);
+  const lastProgramScrollIdRef = useRef<string | null>(null);
+  const speakerRefs = useRef<Record<string, HTMLLIElement | null>>({});
+  const lastSpeakerScrollIdRef = useRef<string | null>(null);
+  const [expandedSpeakerId, setExpandedSpeakerId] = useState<string | null>(null);
 
   useEffect(() => {
     tgReady();
@@ -61,23 +64,67 @@ export default function ProgramPage() {
   }, []);
 
   const speakersById = useMemo(() => new Map(speakers.map((s) => [s.id, s.name])), [speakers]);
-  const currentItemId = useMemo(() => {
-    for (const it of items) {
-      const start = new Date(it.startsAt);
-      const end = it.endsAt ? new Date(it.endsAt) : null;
-      const fallbackEnd = end ?? new Date(start.getTime() + 60 * 60 * 1000);
-      if (now >= start && now < fallbackEnd) return it.id;
+  const focus = useMemo(() => {
+    const parsed = items
+      .map((it) => {
+        const start = new Date(it.startsAt);
+        const end = it.endsAt ? new Date(it.endsAt) : null;
+        const fallbackEnd = end ?? new Date(start.getTime() + 60 * 60 * 1000);
+        return { it, start, end, fallbackEnd };
+      })
+      .filter((x) => Number.isFinite(x.start.getTime()));
+
+    let current: (typeof parsed)[number] | null = null;
+    for (const x of parsed) {
+      if (now >= x.start && now < x.fallbackEnd) {
+        current = x;
+        break;
+      }
     }
-    return null;
+
+    let next: (typeof parsed)[number] | null = null;
+    for (const x of parsed) {
+      if (x.start > now && (!next || x.start < next.start)) next = x;
+    }
+
+    const focused = current ?? next ?? (parsed.length ? parsed[parsed.length - 1] : null);
+    const kind: "current" | "next" | "past" | null = current ? "current" : next ? "next" : focused ? "past" : null;
+
+    const focusedWithSpeaker =
+      focused?.it.speakerId
+        ? focused
+        : (kind === "next" ? next : null) ||
+          parsed.find((x) => x.start > now && x.it.speakerId) ||
+          parsed.find((x) => x.it.speakerId) ||
+          null;
+
+    return {
+      kind,
+      itemId: focused?.it.id ?? null,
+      speakerId: focusedWithSpeaker?.it.speakerId ?? null,
+    };
   }, [items, now]);
 
   useEffect(() => {
     if (tab !== "program") return;
-    if (!currentItemId) return;
-    if (lastScrollIdRef.current === currentItemId) return;
-    lastScrollIdRef.current = currentItemId;
+    if (!focus.itemId) return;
+    if (lastProgramScrollIdRef.current === focus.itemId) return;
+    lastProgramScrollIdRef.current = focus.itemId;
     currentRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [tab, currentItemId]);
+  }, [tab, focus.itemId]);
+
+  useEffect(() => {
+    if (tab !== "speakers") return;
+    if (!focus.speakerId) return;
+    const defer = (fn: () => void) => {
+      if (typeof queueMicrotask === "function") queueMicrotask(fn);
+      else setTimeout(fn, 0);
+    };
+    defer(() => setExpandedSpeakerId(focus.speakerId));
+    if (lastSpeakerScrollIdRef.current === focus.speakerId) return;
+    lastSpeakerScrollIdRef.current = focus.speakerId;
+    speakerRefs.current[focus.speakerId]?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [tab, focus.speakerId]);
 
   return (
     <main className="space-y-4">
@@ -130,16 +177,18 @@ export default function ProgramPage() {
             const speakerName = it.speakerId ? speakersById.get(it.speakerId) : null;
             const fallbackEnd = end ?? new Date(start.getTime() + 60 * 60 * 1000);
             const isCurrent = now >= start && now < fallbackEnd;
+            const isFocusNext = !isCurrent && focus.kind === "next" && focus.itemId === it.id;
 
             return (
               <li
                 key={it.id}
-                ref={isCurrent ? currentRef : null}
-                className={`card p-4 ${isCurrent ? "program-current" : ""}`}
+                ref={isCurrent || isFocusNext ? currentRef : null}
+                className={`card p-4 ${isCurrent ? "program-current" : isFocusNext ? "program-next" : ""}`}
               >
                 <div className="flex items-center justify-between text-sm text-zinc-600">
                   <div>{time}</div>
-                  {isCurrent ? <span className="program-current-badge">Сейчас</span> : null}
+                  {isCurrent ? <span className="program-current-badge">{t("program.badge.now")}</span> : null}
+                  {isFocusNext ? <span className="program-next-badge">{t("program.badge.next")}</span> : null}
                 </div>
                 <div className="mt-1 text-base font-semibold">{it.title}</div>
                 {speakerName ? <div className="mt-0.5 text-sm text-zinc-600">{speakerName}</div> : null}
@@ -151,38 +200,69 @@ export default function ProgramPage() {
         </ul>
       ) : (
         <ul className="space-y-2">
-          {speakers.map((s) => (
-            <li key={s.id} className="card p-4">
-              <div className="flex items-start gap-3">
-                {s.photoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={s.photoUrl} alt={s.name} className="h-12 w-12 rounded-2xl object-cover" />
-                ) : (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-xs text-zinc-600">
-                    Фото
+          {speakers.map((s) => {
+            const isFocused = focus.speakerId === s.id && (focus.kind === "current" || focus.kind === "next");
+            return (
+              <li
+                key={s.id}
+                ref={(el) => {
+                  speakerRefs.current[s.id] = el;
+                }}
+                className={`card p-4 ${isFocused && focus.kind === "current" ? "program-current" : ""} ${
+                  isFocused && focus.kind === "next" ? "program-next" : ""
+                }`}
+              >
+                <details
+                  open={expandedSpeakerId === s.id}
+                  onToggle={(e) => {
+                    const open = (e.currentTarget as HTMLDetailsElement).open;
+                    setExpandedSpeakerId(open ? s.id : null);
+                  }}
+                >
+                  <summary className="flex cursor-pointer list-none items-start gap-3">
+                    {s.photoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={s.photoUrl} alt={s.name} className="h-12 w-12 rounded-2xl object-cover" />
+                    ) : (
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-xs text-zinc-600">
+                        Фото
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-base font-semibold">{s.name}</div>
+                        {isFocused && focus.kind === "current" ? (
+                          <span className="program-current-badge">{t("program.badge.now")}</span>
+                        ) : null}
+                        {isFocused && focus.kind === "next" ? (
+                          <span className="program-next-badge">{t("program.badge.next")}</span>
+                        ) : null}
+                      </div>
+                      {s.topic ? <div className="mt-0.5 text-sm text-zinc-600">{s.topic}</div> : null}
+                    </div>
+                    <div className="text-sm text-zinc-600">▾</div>
+                  </summary>
+
+                  <div className="mt-3">
+                    {s.bio ? <div className="whitespace-pre-wrap text-sm">{s.bio}</div> : null}
+                    {s.socials?.length ? (
+                      <div className="mt-3 flex flex-wrap gap-2 text-sm">
+                        {s.socials.map((raw) => {
+                          const href = normalizeLink(raw);
+                          if (!href) return null;
+                          return (
+                            <a key={raw} href={href} className="text-accent underline" target="_blank" rel="noreferrer">
+                              {raw}
+                            </a>
+                          );
+                        })}
+                      </div>
+                    ) : null}
                   </div>
-                )}
-                <div className="min-w-0">
-                  <div className="text-base font-semibold">{s.name}</div>
-                  {s.topic ? <div className="mt-0.5 text-sm text-zinc-600">{s.topic}</div> : null}
-                </div>
-              </div>
-              {s.bio ? <div className="mt-3 whitespace-pre-wrap text-sm">{s.bio}</div> : null}
-              {s.socials?.length ? (
-                <div className="mt-3 flex flex-wrap gap-2 text-sm">
-                  {s.socials.map((raw) => {
-                    const href = normalizeLink(raw);
-                    if (!href) return null;
-                    return (
-                      <a key={raw} href={href} className="text-accent underline" target="_blank" rel="noreferrer">
-                        {raw}
-                      </a>
-                    );
-                  })}
-                </div>
-              ) : null}
-            </li>
-          ))}
+                </details>
+              </li>
+            );
+          })}
         </ul>
       )}
     </main>
