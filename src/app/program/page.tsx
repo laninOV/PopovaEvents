@@ -31,16 +31,38 @@ function parseScheduleDateTime(raw: string | null): Date | null {
   const v = (raw ?? "").trim();
   if (!v) return null;
 
+  const parseIsoLocalNoTz = (value: string) => {
+    const m = value.match(
+      /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/,
+    );
+    if (!m) return null;
+    const [, y, mo, d, h, mi, s = "0", ms = "0"] = m;
+    const msPadded = ms.padEnd(3, "0");
+    const dt = new Date(
+      Number(y),
+      Number(mo) - 1,
+      Number(d),
+      Number(h),
+      Number(mi),
+      Number(s),
+      Number(msPadded),
+    );
+    return Number.isNaN(dt.getTime()) ? null : dt;
+  };
+
   // ISO or near-ISO
   if (/^\d{4}-\d{2}-\d{2}T/.test(v)) {
+    // If timezone is missing, parse as local time (Safari/iOS can treat it as UTC).
+    const hasTz = /([zZ]|[+-]\d{2}:?\d{2})$/.test(v);
+    if (!hasTz) return parseIsoLocalNoTz(v);
     const d = new Date(v);
     return Number.isNaN(d.getTime()) ? null : d;
   }
 
   // "YYYY-MM-DD HH:mm[:ss]" → make it ISO-like (important for some WebViews)
   if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(v)) {
-    const d = new Date(v.replace(" ", "T"));
-    return Number.isNaN(d.getTime()) ? null : d;
+    const normalized = v.replace(" ", "T");
+    return parseIsoLocalNoTz(normalized);
   }
 
   // "DD.MM.YYYY HH:mm"
