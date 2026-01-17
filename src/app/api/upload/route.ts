@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
 import { getAuthFromRequest } from "@/lib/telegramAuth";
 import { put } from "@vercel/blob";
 
@@ -27,11 +29,27 @@ export async function POST(req: NextRequest) {
   if (!ext) return NextResponse.json({ error: "unsupported_type" }, { status: 400 });
 
   const bytes = Buffer.from(await file.arrayBuffer());
-  const name = `profiles/${crypto.randomUUID()}.${ext}`;
-  const blob = await put(name, bytes, {
-    access: "public",
-    contentType: file.type,
-  });
+  const fileName = `${crypto.randomUUID()}.${ext}`;
 
-  return NextResponse.json({ url: blob.url });
+  const blobToken =
+    process.env.BLOB_READ_WRITE_TOKEN?.trim() ||
+    process.env.VERCEL_BLOB_READ_WRITE_TOKEN?.trim() ||
+    undefined;
+
+  // Prefer Vercel Blob (works reliably on Vercel), fallback to local disk for dev.
+  if (blobToken || process.env.VERCEL === "1") {
+    try {
+      const key = `profiles/${auth.telegramId}/${fileName}`;
+      const blob = await put(key, bytes, { access: "public", contentType: file.type, token: blobToken });
+      return NextResponse.json({ url: blob.url });
+    } catch (e) {
+      console.error("Upload to Vercel Blob failed:", e);
+      if (process.env.VERCEL === "1") return NextResponse.json({ error: "upload_failed" }, { status: 500 });
+    }
+  }
+
+  const dir = path.join(process.cwd(), "public", "uploads");
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, fileName), bytes);
+  return NextResponse.json({ url: `/uploads/${fileName}` });
 }

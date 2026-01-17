@@ -11,15 +11,22 @@ export default function QrPage() {
   const [payload, setPayload] = useState<string>("");
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     tgReady();
-    apiFetch<QrResponse>("/api/qr").then((r) => setPayload(r.payload));
+    apiFetch<QrResponse>("/api/qr")
+      .then((r) => setPayload(r.payload))
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : "Ошибка загрузки QR"))
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
     if (!payload) return;
-    QRCode.toDataURL(payload, { margin: 1, width: 560, errorCorrectionLevel: "M" }).then(setQrUrl);
+    QRCode.toDataURL(payload, { margin: 1, width: 560, errorCorrectionLevel: "M" })
+      .then(setQrUrl)
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : "Ошибка генерации QR"));
   }, [payload]);
 
   return (
@@ -31,13 +38,17 @@ export default function QrPage() {
         </p>
       </header>
 
+      {error ? (
+        <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-900">{error}</div>
+      ) : null}
+
       <section className="card p-4">
         <div className="flex items-center justify-center">
           {qrUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={qrUrl} alt="QR" className="h-64 w-64 rounded-xl bg-white p-2" />
           ) : (
-            <div className="text-sm text-zinc-600">Генерация…</div>
+            <div className="text-sm text-zinc-600">{loading ? "Генерация…" : "—"}</div>
           )}
         </div>
         <div className="mt-4 flex gap-2">

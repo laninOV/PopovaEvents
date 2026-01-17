@@ -44,12 +44,12 @@ export async function POST(req: NextRequest) {
   const user = await getOrCreateUserByTelegramId(auth.telegramId);
   await ensureEventParticipant(event.id, user.id);
 
-  const created = await createOrGetMeeting(event.id, user.id, verified.publicId);
-  if (!created.ok) {
-    const status = created.error === "not_found" ? 404 : 400;
-    return NextResponse.json({ error: created.error }, { status });
+  const result = await createOrGetMeeting(event.id, user.id, verified.publicId);
+  if (!result.ok) {
+    const status = result.error === "not_found" ? 404 : 400;
+    return NextResponse.json({ error: result.error }, { status });
   }
 
-  const detail = await getMeetingDetail(event.id, user.id, created.meetingId);
-  return NextResponse.json({ meeting: detail });
+  const detail = await getMeetingDetail(event.id, user.id, result.meetingId);
+  return NextResponse.json({ meeting: detail, created: result.created });
 }

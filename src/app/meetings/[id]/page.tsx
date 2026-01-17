@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { tgReady } from "@/lib/tgWebApp";
 import type { DbMeetingDetail } from "@/lib/db";
@@ -17,6 +17,7 @@ function normalizeInstagramLink(value: string) {
 
 export default function MeetingDetailPage() {
   const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
   const id = params.id;
 
   const [meeting, setMeeting] = useState<DbMeetingDetail | null>(null);
@@ -24,6 +25,7 @@ export default function MeetingDetailPage() {
   const [rating, setRating] = useState<number | "">("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const status = searchParams.get("status"); // "added" | "exists"
 
   useEffect(() => {
     tgReady();
@@ -71,6 +73,17 @@ export default function MeetingDetailPage() {
           Назад
         </Link>
       </header>
+
+      {status === "added" ? (
+        <div className="card border-[color:var(--border)] bg-[color:var(--muted)] p-4 text-sm">
+          Добавлено в знакомства.
+        </div>
+      ) : null}
+      {status === "exists" ? (
+        <div className="card border-[color:var(--border)] bg-[color:var(--muted)] p-4 text-sm">
+          Этот контакт уже был в знакомствах.
+        </div>
+      ) : null}
 
       {error ? <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-900">{error}</div> : null}
 
@@ -178,4 +191,3 @@ export default function MeetingDetailPage() {
     </main>
   );
 }
-

@@ -30,14 +30,20 @@ export default function ScanPage() {
     setBusy(true);
     setError(null);
     try {
-      const res = await apiFetch<{ meeting: { id: string } | null }>("/api/meetings/scan", {
+      const res = await apiFetch<{ meeting: { id: string } | null; created: boolean }>("/api/meetings/scan", {
         method: "POST",
         body: JSON.stringify({ code }),
       });
       if (!res.meeting?.id) throw new Error("Не удалось создать встречу");
-      router.push(`/meetings/${res.meeting.id}`);
+      const status = res.created ? "added" : "exists";
+      router.push(`/meetings/${res.meeting.id}?status=${status}`);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Ошибка");
+      const raw = e instanceof Error ? e.message : "Ошибка";
+      if (raw.includes("self_scan")) setError("Нельзя сканировать свой QR.");
+      else if (raw.includes("not_found")) setError("Профиль не найден. Попросите человека открыть приложение и зарегистрироваться.");
+      else if (raw.includes("bad_code") || raw.includes("bad_signature") || raw.includes("expired"))
+        setError("Неверный или просроченный QR-код.");
+      else setError(raw);
       setBusy(false);
     }
   }

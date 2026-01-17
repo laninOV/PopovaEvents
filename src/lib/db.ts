@@ -404,12 +404,14 @@ export async function createOrGetMeeting(eventId: string, meUserId: string, othe
   `;
 
   const meetingId = (existing.rows[0] as { id: string } | undefined)?.id ?? newId();
+  let created = false;
   if (!existing.rows.length) {
-    await sql`
+    const inserted = await sql`
       INSERT INTO meetings (id, event_id, user_a_id, user_b_id, created_at, created_by_user_id)
       VALUES (${meetingId}, ${eventId}, ${userAId}, ${userBId}, ${nowIso()}, ${meUserId})
       ON CONFLICT (event_id, user_a_id, user_b_id) DO NOTHING
     `;
+    created = (inserted as unknown as { rowCount?: number }).rowCount === 1;
   }
 
   const ts = nowIso();
@@ -424,7 +426,7 @@ export async function createOrGetMeeting(eventId: string, meUserId: string, othe
     ON CONFLICT (meeting_id, user_id) DO NOTHING
   `;
 
-  return { ok: true as const, meetingId, otherUserId: otherUser.id };
+  return { ok: true as const, meetingId, otherUserId: otherUser.id, created };
 }
 
 export async function listMeetings(eventId: string, meUserId: string): Promise<DbMeetingListItem[]> {
