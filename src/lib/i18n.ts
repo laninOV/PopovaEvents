@@ -6,8 +6,16 @@ export type I18nKey =
   | "nav.scan"
   | "nav.participants"
   | "nav.program"
+  | "settings.title"
+  | "settings.close"
+  | "settings.theme"
   | "settings.theme.dark"
   | "settings.theme.light"
+  | "settings.value.dark"
+  | "settings.value.light"
+  | "settings.language"
+  | "settings.lang.ru"
+  | "settings.lang.en"
   | "home.title"
   | "home.qr"
   | "home.scan"
@@ -71,8 +79,16 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "nav.scan": "Сканировать",
     "nav.participants": "Участники",
     "nav.program": "Программа",
+    "settings.title": "Настройки",
+    "settings.close": "Закрыть",
+    "settings.theme": "Тема",
     "settings.theme.dark": "Тёмная тема",
     "settings.theme.light": "Светлая тема",
+    "settings.value.dark": "Тёмная",
+    "settings.value.light": "Светлая",
+    "settings.language": "Язык",
+    "settings.lang.ru": "Русский",
+    "settings.lang.en": "English",
 
     "home.title": "Привет, {name}",
     "home.qr": "Мой QR",
@@ -142,8 +158,16 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "nav.scan": "Scan",
     "nav.participants": "Participants",
     "nav.program": "Program",
+    "settings.title": "Settings",
+    "settings.close": "Close",
+    "settings.theme": "Theme",
     "settings.theme.dark": "Dark theme",
     "settings.theme.light": "Light theme",
+    "settings.value.dark": "Dark",
+    "settings.value.light": "Light",
+    "settings.language": "Language",
+    "settings.lang.ru": "Russian",
+    "settings.lang.en": "English",
 
     "home.title": "Hi, {name}",
     "home.qr": "My QR",

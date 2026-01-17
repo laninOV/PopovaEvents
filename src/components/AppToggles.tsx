@@ -8,44 +8,78 @@ export function AppToggles() {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="sticky top-[calc(env(safe-area-inset-top)+12px)] z-40 mb-3 flex justify-end">
-      <div className="relative">
+    <div className="mb-3 flex justify-end">
+      <div>
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="btn btn-ghost h-9 w-9 px-0"
-          aria-label="Settings"
+          className="btn btn-ghost h-9 w-9 rounded-full px-0"
+          aria-label={t("settings.title")}
         >
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
             <path
               fill="currentColor"
-              d="M12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Zm9-3.5a7.7 7.7 0 0 0-.1-1l2-1.6-2-3.4-2.4 1a8.3 8.3 0 0 0-1.7-1L16.5 2h-4L11.2 5a8.3 8.3 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1c.5.4 1.1.7 1.7 1l1.3 3h4l1.3-3c.6-.3 1.2-.6 1.7-1l2.4 1 2-3.4-2-1.6c.1-.3.1-.7.1-1Z"
+              d="M6 7h8v2H6V7Zm0 8h12v2H6v-2Zm0-4h4v2H6v-2Zm10-1h2v4h-2v-4Z"
             />
           </svg>
         </button>
 
         {open ? (
-          <div className="absolute right-0 mt-2 w-52 rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-2 shadow">
+          <div className="fixed inset-0 z-50">
             <button
               type="button"
-              onClick={() => {
-                toggleTheme();
-                setOpen(false);
-              }}
-              className="btn btn-ghost h-10 w-full justify-start px-3"
-            >
-              {theme === "dark" ? t("settings.theme.light") : t("settings.theme.dark")}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                toggleLang();
-                setOpen(false);
-              }}
-              className="btn btn-ghost h-10 w-full justify-start px-3"
-            >
-              {lang === "ru" ? "English" : "Русский"}
-            </button>
+              aria-label={t("settings.close")}
+              className="absolute inset-0 bg-black/40"
+              onClick={() => setOpen(false)}
+            />
+
+            <div className="absolute inset-x-0 bottom-0 pb-[calc(12px+env(safe-area-inset-bottom))]">
+              <div className="mx-auto max-w-3xl px-4">
+                <div className="card p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-base font-semibold">{t("settings.title")}</div>
+                    <button
+                      type="button"
+                      onClick={() => setOpen(false)}
+                      className="btn btn-ghost h-9 w-9 rounded-full px-0"
+                      aria-label={t("settings.close")}
+                    >
+                      <span aria-hidden>×</span>
+                    </button>
+                  </div>
+
+                  <div className="mt-3 grid gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        toggleTheme();
+                        setOpen(false);
+                      }}
+                      className="btn btn-ghost h-11 w-full justify-between px-3"
+                    >
+                      <span className="text-sm font-semibold">{t("settings.theme")}</span>
+                      <span className="text-sm text-[color:var(--muted-fg)]">
+                        {theme === "dark" ? t("settings.value.dark") : t("settings.value.light")}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        toggleLang();
+                        setOpen(false);
+                      }}
+                      className="btn btn-ghost h-11 w-full justify-between px-3"
+                    >
+                      <span className="text-sm font-semibold">{t("settings.language")}</span>
+                      <span className="text-sm text-[color:var(--muted-fg)]">
+                        {lang === "ru" ? t("settings.lang.ru") : t("settings.lang.en")}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         ) : null}
       </div>
