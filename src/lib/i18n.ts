@@ -1,6 +1,7 @@
 export type Lang = "ru" | "en";
 
 export type I18nKey =
+  | "nav.home"
   | "nav.profile"
   | "nav.scan"
   | "nav.participants"
@@ -59,10 +60,11 @@ export type I18nKey =
 
 const dict: Record<Lang, Record<I18nKey, string>> = {
   ru: {
+    "nav.home": "Главная",
     "nav.profile": "Профиль",
     "nav.scan": "Сканировать",
     "nav.participants": "Участники",
-    "nav.program": "Спикеры",
+    "nav.program": "Программа",
 
     "home.title": "Привет, {name}",
     "home.qr": "Мой QR",
@@ -123,10 +125,11 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "gate.loading": "Загрузка…",
   },
   en: {
+    "nav.home": "Home",
     "nav.profile": "Profile",
     "nav.scan": "Scan",
     "nav.participants": "Participants",
-    "nav.program": "Speakers",
+    "nav.program": "Program",
 
     "home.title": "Hi, {name}",
     "home.qr": "My QR",

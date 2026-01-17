@@ -41,7 +41,7 @@ export default function ProgramPage() {
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState<Date>(() => new Date());
   const { t } = useAppSettings();
-  const currentRef = useRef<HTMLLIElement | null>(null);
+  const programRefs = useRef<Record<string, HTMLLIElement | null>>({});
   const lastProgramScrollIdRef = useRef<string | null>(null);
   const speakerRefs = useRef<Record<string, HTMLLIElement | null>>({});
   const lastSpeakerScrollIdRef = useRef<string | null>(null);
@@ -105,25 +105,48 @@ export default function ProgramPage() {
     };
   }, [items, now]);
 
+  function scrollToEl(el: HTMLElement | null) {
+    if (!el) return;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    });
+  }
+
   useEffect(() => {
     if (tab !== "program") return;
     if (!focus.itemId) return;
-    if (lastProgramScrollIdRef.current === focus.itemId) return;
-    lastProgramScrollIdRef.current = focus.itemId;
-    currentRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const itemId = focus.itemId;
+    if (lastProgramScrollIdRef.current === itemId) return;
+    lastProgramScrollIdRef.current = itemId;
+    const el = programRefs.current[itemId] ?? document.getElementById(`program-item-${itemId}`);
+    scrollToEl(el);
+    const tId = setTimeout(() => {
+      const retry = programRefs.current[itemId] ?? document.getElementById(`program-item-${itemId}`);
+      scrollToEl(retry);
+    }, 350);
+    return () => clearTimeout(tId);
   }, [tab, focus.itemId]);
 
   useEffect(() => {
     if (tab !== "speakers") return;
     if (!focus.speakerId) return;
+    const speakerId = focus.speakerId;
     const defer = (fn: () => void) => {
       if (typeof queueMicrotask === "function") queueMicrotask(fn);
       else setTimeout(fn, 0);
     };
-    defer(() => setExpandedSpeakerId(focus.speakerId));
-    if (lastSpeakerScrollIdRef.current === focus.speakerId) return;
-    lastSpeakerScrollIdRef.current = focus.speakerId;
-    speakerRefs.current[focus.speakerId]?.scrollIntoView({ behavior: "smooth", block: "center" });
+    defer(() => setExpandedSpeakerId(speakerId));
+    if (lastSpeakerScrollIdRef.current === speakerId) return;
+    lastSpeakerScrollIdRef.current = speakerId;
+    const el = speakerRefs.current[speakerId] ?? document.getElementById(`speaker-item-${speakerId}`);
+    scrollToEl(el);
+    const tId = setTimeout(() => {
+      const retry = speakerRefs.current[speakerId] ?? document.getElementById(`speaker-item-${speakerId}`);
+      scrollToEl(retry);
+    }, 350);
+    return () => clearTimeout(tId);
   }, [tab, focus.speakerId]);
 
   return (
@@ -182,7 +205,10 @@ export default function ProgramPage() {
             return (
               <li
                 key={it.id}
-                ref={isCurrent || isFocusNext ? currentRef : null}
+                id={`program-item-${it.id}`}
+                ref={(el) => {
+                  programRefs.current[it.id] = el;
+                }}
                 className={`card p-4 ${isCurrent ? "program-current" : isFocusNext ? "program-next" : ""}`}
               >
                 <div className="flex items-center justify-between text-sm text-zinc-600">
@@ -205,6 +231,7 @@ export default function ProgramPage() {
             return (
               <li
                 key={s.id}
+                id={`speaker-item-${s.id}`}
                 ref={(el) => {
                   speakerRefs.current[s.id] = el;
                 }}

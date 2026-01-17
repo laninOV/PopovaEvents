@@ -6,10 +6,11 @@ import { EventBootstrap } from "@/components/EventBootstrap";
 import { TelegramGate } from "@/components/TelegramGate";
 import { ProfileGate } from "@/components/ProfileGate";
 import { AppSettingsProvider } from "@/components/AppSettingsProvider";
+import { AppToggles } from "@/components/AppToggles";
 
 export const metadata: Metadata = {
-  title: "Popova Events",
-  description: "Telegram Mini App для оффлайн-ивентов",
+  title: "Mini App",
+  description: "Telegram Mini App",
 };
 
 export const viewport: Viewport = {
@@ -25,13 +26,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru" data-theme="dark">
+    <html lang="ru">
       <body className="antialiased">
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
         <AppSettingsProvider>
           <EventBootstrap />
           <TelegramGate />
           <ProfileGate />
+          <AppToggles />
           <div className="mx-auto min-h-dvh max-w-3xl px-4 pb-20 pt-4 text-[color:var(--foreground)]">
             {children}
           </div>

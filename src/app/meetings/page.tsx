@@ -54,6 +54,15 @@ export default function MeetingsPage() {
                 <div className="text-right text-xs text-zinc-600">
                   {m.other.niche ? `Ниша: ${m.other.niche}` : null}
                   {m.meta.rating ? <div>Оценка: {m.meta.rating}/5</div> : null}
+                  {m.meta.plannedAt ? (
+                    <div>
+                      Встреча:{" "}
+                      {new Date(m.meta.plannedAt).toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" })}
+                      {m.meta.plannedPlace ? ` · ${m.meta.plannedPlace}` : ""}
+                    </div>
+                  ) : m.meta.plannedPlace ? (
+                    <div>Встреча: {m.meta.plannedPlace}</div>
+                  ) : null}
                 </div>
               </div>
               {m.meta.note ? (

@@ -9,6 +9,8 @@ export const runtime = "nodejs";
 const BodySchema = z.object({
   note: z.string().trim().max(1000).nullable().optional(),
   rating: z.number().int().min(1).max(5).nullable().optional(),
+  plannedAt: z.string().datetime().nullable().optional(),
+  plannedPlace: z.string().trim().max(200).nullable().optional(),
 });
 
 export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
@@ -28,7 +30,14 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
   const meeting = await getMeetingDetail(event.id, user.id, id);
   if (!meeting) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
-  await updateMeetingMeta(id, user.id, parsed.data.note ?? null, parsed.data.rating ?? null);
+  await updateMeetingMeta(
+    id,
+    user.id,
+    parsed.data.note ?? null,
+    parsed.data.rating ?? null,
+    parsed.data.plannedAt ?? null,
+    parsed.data.plannedPlace ?? null,
+  );
   const updated = await getMeetingDetail(event.id, user.id, id);
   return NextResponse.json({ meeting: updated });
 }

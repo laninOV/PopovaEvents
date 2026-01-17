@@ -23,9 +23,24 @@ export default function MeetingDetailPage() {
   const [meeting, setMeeting] = useState<DbMeetingDetail | null>(null);
   const [note, setNote] = useState("");
   const [rating, setRating] = useState<number | "">("");
+  const [plannedAtLocal, setPlannedAtLocal] = useState("");
+  const [plannedPlace, setPlannedPlace] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const status = searchParams.get("status"); // "added" | "exists"
+
+  function toLocalInputValue(iso: string | null) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    const mm = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const mi = pad(d.getMinutes());
+    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+  }
 
   useEffect(() => {
     tgReady();
@@ -34,6 +49,8 @@ export default function MeetingDetailPage() {
         setMeeting(r.meeting);
         setNote(r.meeting.meta.note ?? "");
         setRating(r.meeting.meta.rating ?? "");
+        setPlannedAtLocal(toLocalInputValue(r.meeting.meta.plannedAt ?? null));
+        setPlannedPlace(r.meeting.meta.plannedPlace ?? "");
       })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : "Ошибка загрузки"));
   }, [id]);
@@ -42,9 +59,21 @@ export default function MeetingDetailPage() {
     setSaving(true);
     setError(null);
     try {
+      const plannedAt = plannedAtLocal.trim()
+        ? (() => {
+            const d = new Date(plannedAtLocal);
+            if (Number.isNaN(d.getTime())) throw new Error("Некорректная дата");
+            return d.toISOString();
+          })()
+        : null;
       const res = await apiFetch<{ meeting: DbMeetingDetail }>(`/api/meetings/${id}/meta`, {
         method: "PUT",
-        body: JSON.stringify({ note: note.trim() ? note.trim() : null, rating: rating === "" ? null : rating }),
+        body: JSON.stringify({
+          note: note.trim() ? note.trim() : null,
+          rating: rating === "" ? null : rating,
+          plannedAt,
+          plannedPlace: plannedPlace.trim() ? plannedPlace.trim() : null,
+        }),
       });
       setMeeting(res.meeting);
     } catch (e: unknown) {
@@ -178,6 +207,26 @@ export default function MeetingDetailPage() {
                   <option value="4">4</option>
                   <option value="5">5</option>
                 </select>
+              </label>
+              <div className="mt-2 text-sm font-medium">Мини-встреча</div>
+              <label className="grid gap-1">
+                <span className="text-sm text-zinc-600">Когда</span>
+                <input
+                  type="datetime-local"
+                  value={plannedAtLocal}
+                  onChange={(e) => setPlannedAtLocal(e.target.value)}
+                  className="input"
+                />
+              </label>
+              <label className="grid gap-1">
+                <span className="text-sm text-zinc-600">Где</span>
+                <input
+                  value={plannedPlace}
+                  onChange={(e) => setPlannedPlace(e.target.value)}
+                  className="input"
+                  maxLength={200}
+                  placeholder="Например: у входа / у кофе / стол №3"
+                />
               </label>
               <button type="button" disabled={saving} onClick={save} className={`btn w-full ${saving ? "bg-zinc-200 text-zinc-500" : "btn-primary"}`}>
                 {saving ? "Сохранение…" : "Сохранить"}

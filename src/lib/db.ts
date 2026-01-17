@@ -34,6 +34,8 @@ export type DbMeetingListItem = {
   meta: {
     note: string | null;
     rating: number | null;
+    plannedAt: string | null;
+    plannedPlace: string | null;
   };
 };
 
@@ -185,10 +187,16 @@ async function initDb() {
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       note TEXT,
       rating INTEGER,
+      planned_at TEXT,
+      planned_place TEXT,
       updated_at TEXT NOT NULL,
       UNIQUE(meeting_id, user_id)
     )
   `;
+
+  // Backward-compatible migrations for existing tables
+  await sql`ALTER TABLE meeting_meta ADD COLUMN IF NOT EXISTS planned_at TEXT`;
+  await sql`ALTER TABLE meeting_meta ADD COLUMN IF NOT EXISTS planned_place TEXT`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS speakers (
@@ -443,7 +451,9 @@ export async function listMeetings(eventId: string, meUserId: string): Promise<D
       po.photo_url as other_photo_url,
       po.niche as other_niche,
       mm.note as my_note,
-      mm.rating as my_rating
+      mm.rating as my_rating,
+      mm.planned_at as my_planned_at,
+      mm.planned_place as my_planned_place
     FROM meetings m
     JOIN users uo
       ON uo.id = CASE WHEN m.user_a_id = ${meUserId} THEN m.user_b_id ELSE m.user_a_id END
@@ -465,6 +475,8 @@ export async function listMeetings(eventId: string, meUserId: string): Promise<D
     other_niche: string | null;
     my_note: string | null;
     my_rating: number | null;
+    my_planned_at: string | null;
+    my_planned_place: string | null;
   }>;
 
   return rows.map((r) => ({
@@ -480,7 +492,7 @@ export async function listMeetings(eventId: string, meUserId: string): Promise<D
       photoUrl: r.other_photo_url,
       niche: r.other_niche,
     },
-    meta: { note: r.my_note, rating: r.my_rating },
+    meta: { note: r.my_note, rating: r.my_rating, plannedAt: r.my_planned_at, plannedPlace: r.my_planned_place },
   }));
 }
 
@@ -507,7 +519,9 @@ export async function getMeetingDetail(
       po.helpful as helpful,
       po.updated_at as updated_at,
       mm.note as my_note,
-      mm.rating as my_rating
+      mm.rating as my_rating,
+      mm.planned_at as my_planned_at,
+      mm.planned_place as my_planned_place
     FROM meetings m
     JOIN users uo
       ON uo.id = CASE WHEN m.user_a_id = ${meUserId} THEN m.user_b_id ELSE m.user_a_id END
@@ -535,6 +549,8 @@ export async function getMeetingDetail(
         updated_at: string | null;
         my_note: string | null;
         my_rating: number | null;
+        my_planned_at: string | null;
+        my_planned_place: string | null;
       }
     | undefined;
 
@@ -564,16 +580,23 @@ export async function getMeetingDetail(
       photoUrl: otherProfile?.photoUrl ?? null,
       niche: otherProfile?.niche ?? null,
     },
-    meta: { note: row.my_note, rating: row.my_rating },
+    meta: { note: row.my_note, rating: row.my_rating, plannedAt: row.my_planned_at, plannedPlace: row.my_planned_place },
     otherProfile,
   };
 }
 
-export async function updateMeetingMeta(meetingId: string, userId: string, note: string | null, rating: number | null) {
+export async function updateMeetingMeta(
+  meetingId: string,
+  userId: string,
+  note: string | null,
+  rating: number | null,
+  plannedAt: string | null,
+  plannedPlace: string | null,
+) {
   await ensureDb();
   await sql`
     UPDATE meeting_meta
-    SET note = ${note}, rating = ${rating}, updated_at = ${nowIso()}
+    SET note = ${note}, rating = ${rating}, planned_at = ${plannedAt}, planned_place = ${plannedPlace}, updated_at = ${nowIso()}
     WHERE meeting_id = ${meetingId} AND user_id = ${userId}
   `;
 }
