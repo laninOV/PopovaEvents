@@ -26,6 +26,44 @@ type ScheduleItem = {
   sortOrder: number;
 };
 
+function parseScheduleDateTime(raw: string | null): Date | null {
+  const v = (raw ?? "").trim();
+  if (!v) return null;
+
+  // ISO or near-ISO
+  if (/^\d{4}-\d{2}-\d{2}T/.test(v)) {
+    const d = new Date(v);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  // "YYYY-MM-DD HH:mm[:ss]" → make it ISO-like (important for some WebViews)
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(v)) {
+    const d = new Date(v.replace(" ", "T"));
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  // "DD.MM.YYYY HH:mm"
+  const m = v.match(/^(\d{2})\.(\d{2})\.(\d{4})(?:[ T](\d{2}):(\d{2}))?$/);
+  if (m) {
+    const [, dd, mm, yyyy, hh = "00", mi = "00"] = m;
+    const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd), Number(hh), Number(mi), 0, 0);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  // "HH:mm" (assume today, local)
+  const t = v.match(/^(\d{2}):(\d{2})$/);
+  if (t) {
+    const [, hh, mi] = t;
+    const d = new Date();
+    d.setSeconds(0, 0);
+    d.setHours(Number(hh), Number(mi), 0, 0);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 function normalizeLink(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return null;
@@ -67,12 +105,13 @@ export default function ProgramPage() {
   const focus = useMemo(() => {
     const parsed = items
       .map((it) => {
-        const start = new Date(it.startsAt);
-        const end = it.endsAt ? new Date(it.endsAt) : null;
+        const start = parseScheduleDateTime(it.startsAt);
+        const end = parseScheduleDateTime(it.endsAt);
+        if (!start) return null;
         const fallbackEnd = end ?? new Date(start.getTime() + 60 * 60 * 1000);
         return { it, start, end, fallbackEnd };
       })
-      .filter((x) => Number.isFinite(x.start.getTime()));
+      .filter((x): x is NonNullable<typeof x> => Boolean(x));
 
     let current: (typeof parsed)[number] | null = null;
     for (const x of parsed) {
@@ -192,14 +231,16 @@ export default function ProgramPage() {
       {tab === "program" ? (
         <ul className="space-y-2">
           {items.map((it) => {
-            const start = new Date(it.startsAt);
-            const end = it.endsAt ? new Date(it.endsAt) : null;
-            const time = `${start.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}${
-              end ? `–${end.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}` : ""
-            }`;
+            const start = parseScheduleDateTime(it.startsAt);
+            const end = parseScheduleDateTime(it.endsAt);
+            const time = start
+              ? `${start.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}${
+                  end ? `–${end.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}` : ""
+                }`
+              : it.startsAt;
             const speakerName = it.speakerId ? speakersById.get(it.speakerId) : null;
-            const fallbackEnd = end ?? new Date(start.getTime() + 60 * 60 * 1000);
-            const isCurrent = now >= start && now < fallbackEnd;
+            const fallbackEnd = start ? end ?? new Date(start.getTime() + 60 * 60 * 1000) : null;
+            const isCurrent = start ? now >= start && now < (fallbackEnd ?? start) : false;
             const isFocusNext = !isCurrent && focus.kind === "next" && focus.itemId === it.id;
 
             return (

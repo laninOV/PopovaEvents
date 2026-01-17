@@ -56,6 +56,16 @@ export async function PUT(req: NextRequest) {
   const user = await getOrCreateUserByTelegramId(auth.telegramId);
   await ensureEventParticipant(event.id, user.id);
 
+  const telegramPhotoUrl =
+    auth.telegramUser &&
+    typeof auth.telegramUser === "object" &&
+    "photo_url" in auth.telegramUser &&
+    typeof (auth.telegramUser as { photo_url?: unknown }).photo_url === "string"
+      ? (auth.telegramUser as { photo_url: string }).photo_url
+      : null;
+
+  const effectivePhotoUrl = parsed.data.photoUrl ?? telegramPhotoUrl ?? null;
+
   const profile = await upsertProfile(user.id, {
     ...parsed.data,
     lastName: parsed.data.lastName ?? null,
@@ -63,7 +73,7 @@ export async function PUT(req: NextRequest) {
     niche: parsed.data.niche ?? null,
     about: parsed.data.about ?? null,
     helpful: parsed.data.helpful ?? null,
-    photoUrl: parsed.data.photoUrl ?? null,
+    photoUrl: effectivePhotoUrl,
   });
   await setBotUserRegistered(auth.telegramId);
   return NextResponse.json({ ok: true, profile });

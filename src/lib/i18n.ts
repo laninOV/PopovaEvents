@@ -6,6 +6,8 @@ export type I18nKey =
   | "nav.scan"
   | "nav.participants"
   | "nav.program"
+  | "settings.theme.dark"
+  | "settings.theme.light"
   | "home.title"
   | "home.qr"
   | "home.scan"
@@ -15,6 +17,10 @@ export type I18nKey =
   | "home.chat"
   | "home.editProfile"
   | "home.fillProfile"
+  | "home.myProfile"
+  | "home.profileEmpty"
+  | "home.instagramMissing"
+  | "home.open"
   | "home.participants"
   | "home.programSpeakers"
   | "participants.title"
@@ -65,6 +71,8 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "nav.scan": "Сканировать",
     "nav.participants": "Участники",
     "nav.program": "Программа",
+    "settings.theme.dark": "Тёмная тема",
+    "settings.theme.light": "Светлая тема",
 
     "home.title": "Привет, {name}",
     "home.qr": "Мой QR",
@@ -75,6 +83,10 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "home.chat": "Чат",
     "home.editProfile": "Редактировать",
     "home.fillProfile": "Заполнить профиль",
+    "home.myProfile": "Мой профиль",
+    "home.profileEmpty": "Профиль не заполнен.",
+    "home.instagramMissing": "Instagram не указан",
+    "home.open": "Открыть",
     "home.participants": "Участники",
     "home.programSpeakers": "Программа / Спикеры",
 
@@ -130,6 +142,8 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "nav.scan": "Scan",
     "nav.participants": "Participants",
     "nav.program": "Program",
+    "settings.theme.dark": "Dark theme",
+    "settings.theme.light": "Light theme",
 
     "home.title": "Hi, {name}",
     "home.qr": "My QR",
@@ -140,6 +154,10 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "home.chat": "Chat",
     "home.editProfile": "Edit profile",
     "home.fillProfile": "Fill profile",
+    "home.myProfile": "My profile",
+    "home.profileEmpty": "Your profile is not filled yet.",
+    "home.instagramMissing": "Instagram is not set",
+    "home.open": "Open",
     "home.participants": "Participants",
     "home.programSpeakers": "Program / Speakers",
 

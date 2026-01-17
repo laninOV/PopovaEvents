@@ -34,7 +34,7 @@ export default function QrPage() {
       <header>
         <h1 className="text-2xl">Мой QR</h1>
         <p className="mt-1 text-sm text-zinc-600">
-          Пусть другой участник откроет «Сканировать QR» и отсканирует этот код.
+          Пусть другой участник откроет «Сканировать QR-код» и отсканирует этот код.
         </p>
       </header>
 

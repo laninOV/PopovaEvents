@@ -80,7 +80,7 @@ export default function ScanPage() {
   return (
     <main className="space-y-4">
       <header>
-        <h1 className="text-2xl">Сканировать QR</h1>
+        <h1 className="text-2xl">Сканировать QR-код</h1>
         <p className="mt-1 text-sm text-zinc-600">
           Наведите камеру на QR другого участника — встреча появится у вас обоих.
         </p>

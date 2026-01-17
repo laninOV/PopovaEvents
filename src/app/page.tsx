@@ -75,13 +75,13 @@ export default function HomePage() {
 
       <section className="card p-4">
         <div className="flex items-center justify-between">
-          <div className="text-sm font-semibold">Мой профиль</div>
+          <div className="text-sm font-semibold">{t("home.myProfile")}</div>
           <Link href="/form" className="btn btn-ghost h-8 px-3 text-xs">
             {profile ? t("home.editProfile") : t("home.fillProfile")}
           </Link>
         </div>
         {!profile ? (
-          <div className="mt-3 text-sm text-[color:var(--muted-fg)]">Профиль не заполнен.</div>
+          <div className="mt-3 text-sm text-[color:var(--muted-fg)]">{t("home.profileEmpty")}</div>
         ) : (
           <div className="mt-3 flex items-start gap-3">
             {fallbackPhotoUrl ? (
@@ -110,7 +110,7 @@ export default function HomePage() {
                     {profile.instagram}
                   </a>
                 ) : (
-                  <span className="text-[color:var(--muted-fg)]">Instagram не указан</span>
+                  <span className="text-[color:var(--muted-fg)]">{t("home.instagramMissing")}</span>
                 )}
               </div>
             </div>
@@ -138,7 +138,7 @@ export default function HomePage() {
               <li key={m.id} className="flex items-center justify-between text-sm">
                 <div className="truncate font-medium">{m.other.displayName ?? "Участник"}</div>
                 <Link href={`/meetings/${m.id}`} className="text-xs text-accent underline">
-                  Открыть
+                  {t("home.open")}
                 </Link>
               </li>
             ))}
