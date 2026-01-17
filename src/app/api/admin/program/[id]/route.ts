@@ -13,7 +13,7 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: stri
 
   const event = await getEventForRequest(req);
   if (!event) return NextResponse.json({ error: "event_not_found" }, { status: 404 });
-  const user = await getOrCreateUserByTelegramId(auth.telegramId);
+  const user = await getOrCreateUserByTelegramId(auth.telegramId, auth.telegramUser);
   await ensureEventParticipant(event.id, user.id);
 
   const { id } = await ctx.params;

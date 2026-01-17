@@ -100,6 +100,7 @@ export default function ProgramPage() {
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const timeCorrectionMsRef = useRef<number>(0);
   const [now, setNow] = useState<Date>(() => new Date());
   const { t } = useAppSettings();
   const programRefs = useRef<Record<string, HTMLLIElement | null>>({});
@@ -107,6 +108,11 @@ export default function ProgramPage() {
   const speakerRefs = useRef<Record<string, HTMLLIElement | null>>({});
   const lastSpeakerScrollIdRef = useRef<string | null>(null);
   const [expandedSpeakerId, setExpandedSpeakerId] = useState<string | null>(null);
+  const debugTime = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const sp = new URLSearchParams(window.location.search);
+    return sp.get("debugTime") === "1";
+  }, []);
 
   useEffect(() => {
     tgReady();
@@ -120,7 +126,24 @@ export default function ProgramPage() {
   }, []);
 
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 60 * 1000);
+    // If the device clock is off, Telegram's auth_date gives us a sane reference (server-side epoch seconds).
+    try {
+      const tg = (window as unknown as { Telegram?: { WebApp?: { initDataUnsafe?: { auth_date?: unknown } } } })
+        .Telegram?.WebApp;
+      const authDateSec = tg?.initDataUnsafe?.auth_date;
+      if (typeof authDateSec === "number" && Number.isFinite(authDateSec) && authDateSec > 0) {
+        const authMs = authDateSec * 1000;
+        const offset = authMs - Date.now();
+        // Apply correction only if the drift is significant (2+ minutes).
+        if (Math.abs(offset) > 2 * 60 * 1000) timeCorrectionMsRef.current = offset;
+      }
+    } catch {
+      // ignore
+    }
+
+    const tick = () => setNow(new Date(Date.now() + timeCorrectionMsRef.current));
+    tick();
+    const id = setInterval(tick, 30 * 1000);
     return () => clearInterval(id);
   }, []);
 
@@ -218,6 +241,23 @@ export default function ProgramPage() {
         <h1 className="text-2xl">{t("program.title")}</h1>
         <AppToggles />
       </header>
+
+      {debugTime ? (
+        <details className="card p-4 text-sm">
+          <summary className="cursor-pointer select-none font-semibold">Time debug</summary>
+          <div className="mt-2 grid gap-1 text-xs text-[color:var(--muted-fg)]">
+            <div>device: {new Date().toString()}</div>
+            <div>now: {now.toString()}</div>
+            <div>nowMs: {now.getTime()}</div>
+            <div>tz: {Intl.DateTimeFormat().resolvedOptions().timeZone}</div>
+            <div>offset(min): {-new Date().getTimezoneOffset()}</div>
+            <div>correctionMs: {timeCorrectionMsRef.current}</div>
+            <div>focus: {JSON.stringify(focus)}</div>
+            <div>items: {items.length}</div>
+            <div>sample: {items[0]?.startsAt ?? "—"}</div>
+          </div>
+        </details>
+      ) : null}
 
       <div className="card p-2">
         <div className="grid grid-cols-2 gap-2">

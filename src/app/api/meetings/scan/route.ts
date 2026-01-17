@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   const event =
     verified.eventSlug === defaultSlug ? await ensureDefaultEvent() : await ensureEventBySlug(verified.eventSlug);
   if (!event) return NextResponse.json({ error: "event_not_found" }, { status: 404 });
-  const user = await getOrCreateUserByTelegramId(auth.telegramId);
+  const user = await getOrCreateUserByTelegramId(auth.telegramId, auth.telegramUser);
   await ensureEventParticipant(event.id, user.id);
 
   const result = await createOrGetMeeting(event.id, user.id, verified.publicId);

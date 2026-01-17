@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
   const event = await getEventForRequest(req);
   if (!event) return NextResponse.json({ error: "event_not_found" }, { status: 404 });
-  const user = await getOrCreateUserByTelegramId(auth.telegramId);
+  const user = await getOrCreateUserByTelegramId(auth.telegramId, auth.telegramUser);
   await ensureEventParticipant(event.id, user.id);
 
   return NextResponse.json({ chatLink: await getChatLink() });
@@ -35,7 +35,7 @@ export async function PUT(req: NextRequest) {
 
   const event = await getEventForRequest(req);
   if (!event) return NextResponse.json({ error: "event_not_found" }, { status: 404 });
-  const user = await getOrCreateUserByTelegramId(auth.telegramId);
+  const user = await getOrCreateUserByTelegramId(auth.telegramId, auth.telegramUser);
   await ensureEventParticipant(event.id, user.id);
 
   await setChatLink(parsed.data.chatLink?.trim() ? parsed.data.chatLink.trim() : null);

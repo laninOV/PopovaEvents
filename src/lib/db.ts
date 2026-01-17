@@ -5,6 +5,7 @@ export type DbUser = {
   id: string;
   telegramId: string;
   publicId: string;
+  telegramPhotoUrl?: string | null;
   createdAt: string;
 };
 
@@ -128,9 +129,13 @@ async function initDb() {
       id TEXT PRIMARY KEY,
       telegram_id TEXT UNIQUE NOT NULL,
       public_id TEXT UNIQUE NOT NULL,
+      telegram_photo_url TEXT,
       created_at TEXT NOT NULL
     )
   `;
+
+  // Backward-compatible migrations for existing tables
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_photo_url TEXT`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS profiles (
@@ -292,21 +297,37 @@ export async function ensureEventBySlug(slug: string) {
   return { id, slug, name, status: "active" as const };
 }
 
-export async function getOrCreateUserByTelegramId(telegramId: string): Promise<DbUser> {
+export async function getOrCreateUserByTelegramId(telegramId: string, telegramUser?: unknown | null): Promise<DbUser> {
   await ensureDb();
+  const telegramPhotoUrl =
+    telegramUser && typeof telegramUser === "object" && "photo_url" in telegramUser
+      ? (() => {
+          const v = (telegramUser as { photo_url?: unknown }).photo_url;
+          return typeof v === "string" && v.trim() ? v.trim() : null;
+        })()
+      : null;
   const createdAt = nowIso();
   const result = await sql`
-    INSERT INTO users (id, telegram_id, public_id, created_at)
-    VALUES (${newId()}, ${telegramId}, ${newId()}, ${createdAt})
+    INSERT INTO users (id, telegram_id, public_id, telegram_photo_url, created_at)
+    VALUES (${newId()}, ${telegramId}, ${newId()}, ${telegramPhotoUrl}, ${createdAt})
     ON CONFLICT (telegram_id)
-    DO UPDATE SET telegram_id = EXCLUDED.telegram_id
-    RETURNING id, telegram_id, public_id, created_at
+    DO UPDATE SET
+      telegram_id = EXCLUDED.telegram_id,
+      telegram_photo_url = COALESCE(EXCLUDED.telegram_photo_url, users.telegram_photo_url)
+    RETURNING id, telegram_id, public_id, telegram_photo_url, created_at
   `;
-  const row = result.rows[0] as { id: string; telegram_id: string; public_id: string; created_at: string };
+  const row = result.rows[0] as {
+    id: string;
+    telegram_id: string;
+    public_id: string;
+    telegram_photo_url: string | null;
+    created_at: string;
+  };
   return {
     id: row.id,
     telegramId: row.telegram_id,
     publicId: row.public_id,
+    telegramPhotoUrl: row.telegram_photo_url,
     createdAt: row.created_at,
   };
 }
@@ -446,6 +467,7 @@ export async function listMeetings(eventId: string, meUserId: string): Promise<D
       uo.id as other_user_id,
       uo.telegram_id as other_telegram_id,
       uo.public_id as other_public_id,
+      uo.telegram_photo_url as other_telegram_photo_url,
       po.first_name as other_first_name,
       po.last_name as other_last_name,
       po.photo_url as other_photo_url,
@@ -469,6 +491,7 @@ export async function listMeetings(eventId: string, meUserId: string): Promise<D
     other_user_id: string;
     other_telegram_id: string;
     other_public_id: string;
+    other_telegram_photo_url: string | null;
     other_first_name: string | null;
     other_last_name: string | null;
     other_photo_url: string | null;
@@ -489,7 +512,7 @@ export async function listMeetings(eventId: string, meUserId: string): Promise<D
       displayName: r.other_first_name
         ? buildDisplayName({ firstName: r.other_first_name, lastName: r.other_last_name })
         : null,
-      photoUrl: r.other_photo_url,
+      photoUrl: r.other_photo_url ?? r.other_telegram_photo_url,
       niche: r.other_niche,
     },
     meta: { note: r.my_note, rating: r.my_rating, plannedAt: r.my_planned_at, plannedPlace: r.my_planned_place },
@@ -509,6 +532,7 @@ export async function getMeetingDetail(
       uo.id as other_user_id,
       uo.telegram_id as other_telegram_id,
       uo.public_id as other_public_id,
+      uo.telegram_photo_url as other_telegram_photo_url,
       po.user_id as profile_user_id,
       po.photo_url as photo_url,
       po.first_name as first_name,
@@ -538,6 +562,7 @@ export async function getMeetingDetail(
         other_user_id: string;
         other_telegram_id: string;
         other_public_id: string;
+        other_telegram_photo_url: string | null;
         profile_user_id: string | null;
         photo_url: string | null;
         first_name: string | null;
@@ -558,7 +583,7 @@ export async function getMeetingDetail(
   const otherProfile: DbProfile | null = row.profile_user_id
     ? {
         userId: row.profile_user_id,
-        photoUrl: row.photo_url,
+        photoUrl: row.photo_url ?? row.other_telegram_photo_url,
         firstName: row.first_name ?? "—",
         lastName: row.last_name,
         instagram: row.instagram,
@@ -725,6 +750,7 @@ export async function listParticipants(eventId: string, opts?: { q?: string | nu
       ep.joined_at as joined_at,
       u.id as user_id,
       u.public_id as public_id,
+      u.telegram_photo_url as telegram_photo_url,
       p.photo_url as photo_url,
       p.first_name as first_name,
       p.last_name as last_name,
@@ -745,6 +771,7 @@ export async function listParticipants(eventId: string, opts?: { q?: string | nu
     joined_at: string;
     user_id: string;
     public_id: string;
+    telegram_photo_url: string | null;
     photo_url: string | null;
     first_name: string;
     last_name: string | null;
@@ -761,7 +788,7 @@ export async function listParticipants(eventId: string, opts?: { q?: string | nu
     joinedAt: r.joined_at,
     profile: {
       userId: r.user_id,
-      photoUrl: r.photo_url,
+      photoUrl: r.photo_url ?? r.telegram_photo_url,
       firstName: r.first_name,
       lastName: r.last_name,
       instagram: r.instagram,
@@ -865,6 +892,7 @@ export async function listAdminProfiles(eventId: string, opts?: { q?: string | n
       u.id as user_id,
       u.telegram_id as telegram_id,
       u.public_id as public_id,
+      u.telegram_photo_url as telegram_photo_url,
       p.photo_url as photo_url,
       p.first_name as first_name,
       p.last_name as last_name,
@@ -886,6 +914,7 @@ export async function listAdminProfiles(eventId: string, opts?: { q?: string | n
     user_id: string;
     telegram_id: string;
     public_id: string;
+    telegram_photo_url: string | null;
     photo_url: string | null;
     first_name: string;
     last_name: string | null;
@@ -903,7 +932,7 @@ export async function listAdminProfiles(eventId: string, opts?: { q?: string | n
     joinedAt: r.joined_at,
     profile: {
       userId: r.user_id,
-      photoUrl: r.photo_url,
+      photoUrl: r.photo_url ?? r.telegram_photo_url,
       firstName: r.first_name,
       lastName: r.last_name,
       instagram: r.instagram,

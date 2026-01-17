@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   const secret = process.env.QR_SECRET?.trim();
   const allowUnsigned = process.env.ALLOW_UNSIGNED_QR === "1";
 
-  const user = await getOrCreateUserByTelegramId(auth.telegramId);
+  const user = await getOrCreateUserByTelegramId(auth.telegramId, auth.telegramUser);
   await ensureEventParticipant(event.id, user.id);
 
   if (!secret) {
