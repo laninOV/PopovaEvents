@@ -63,7 +63,18 @@ export default function FormPage() {
       const res = await apiFetch<{ url: string }>("/api/upload", { method: "POST", body: form });
       setPhotoUrl(res.url);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Не удалось загрузить фото");
+      const msg = e instanceof Error ? e.message : "Не удалось загрузить фото";
+      if (msg.includes("missing_blob_token")) {
+        setError("На сервере не настроено хранилище для фото (Vercel Blob). Добавьте BLOB_READ_WRITE_TOKEN и сделайте redeploy.");
+      } else if (msg.includes("upload_failed")) {
+        setError("Не удалось загрузить фото. Проверьте Vercel Blob и переменную BLOB_READ_WRITE_TOKEN (затем redeploy).");
+      } else if (msg.includes("file_too_large")) {
+        setError("Файл слишком большой (до 5MB).");
+      } else if (msg.includes("unsupported_type")) {
+        setError("Неподдерживаемый формат. Используйте PNG/JPG/WebP.");
+      } else {
+        setError(msg);
+      }
     } finally {
       setUploading(false);
     }

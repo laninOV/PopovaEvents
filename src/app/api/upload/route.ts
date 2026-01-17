@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   const ext = ALLOWED_TYPES.get(file.type);
   if (!ext) return NextResponse.json({ error: "unsupported_type" }, { status: 400 });
 
-  const bytes = Buffer.from(await file.arrayBuffer());
+  const arrayBuffer = await file.arrayBuffer();
   const fileName = `${crypto.randomUUID()}.${ext}`;
 
   const blobToken =
@@ -37,19 +37,24 @@ export async function POST(req: NextRequest) {
     undefined;
 
   // Prefer Vercel Blob (works reliably on Vercel), fallback to local disk for dev.
-  if (blobToken || process.env.VERCEL === "1") {
+  const isVercel = process.env.VERCEL === "1";
+  if (isVercel && !blobToken) {
+    return NextResponse.json({ error: "missing_blob_token" }, { status: 500 });
+  }
+
+  if (blobToken || isVercel) {
     try {
       const key = `profiles/${auth.telegramId}/${fileName}`;
-      const blob = await put(key, bytes, { access: "public", contentType: file.type, token: blobToken });
+      const blob = await put(key, arrayBuffer, { access: "public", contentType: file.type, token: blobToken });
       return NextResponse.json({ url: blob.url });
     } catch (e) {
       console.error("Upload to Vercel Blob failed:", e);
-      if (process.env.VERCEL === "1") return NextResponse.json({ error: "upload_failed" }, { status: 500 });
+      if (isVercel) return NextResponse.json({ error: "upload_failed" }, { status: 500 });
     }
   }
 
   const dir = path.join(process.cwd(), "public", "uploads");
   fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, fileName), bytes);
+  fs.writeFileSync(path.join(dir, fileName), Buffer.from(arrayBuffer));
   return NextResponse.json({ url: `/uploads/${fileName}` });
 }

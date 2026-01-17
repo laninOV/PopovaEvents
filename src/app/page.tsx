@@ -57,7 +57,6 @@ export default function HomePage() {
   }, []);
 
   const tgUser = getTelegramUnsafeUser();
-  const name = me?.profile?.displayName || tgUser?.first_name || "участник";
   const fallbackPhotoUrl = profile?.photoUrl ?? tgUser?.photo_url ?? null;
   const displayName = useMemo(() => {
     if (!profile) return null;
@@ -71,8 +70,7 @@ export default function HomePage() {
   return (
     <main className="space-y-4">
       <header className="card p-4">
-        <div className="text-sm text-[color:var(--muted-fg)]">{me?.event?.name ?? "Ивент"}</div>
-        <h1 className="mt-1 text-3xl">{t("home.title", { name })}</h1>
+        <h1 className="text-2xl">{t("nav.home")}</h1>
       </header>
 
       <section className="card p-4">
