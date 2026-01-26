@@ -9,6 +9,7 @@ export type TelegramWebApp = {
       photo_url?: string;
     };
   };
+  colorScheme?: "light" | "dark";
   ready?: () => void;
   expand?: () => void;
   close?: () => void;

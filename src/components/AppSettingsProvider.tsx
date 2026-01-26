@@ -20,6 +20,8 @@ const AppSettingsContext = createContext<Ctx | null>(null);
 
 function getInitialLang(): Lang {
   if (typeof window === "undefined") return "ru";
+  const docLang = document.documentElement.lang?.trim();
+  if (docLang === "en" || docLang === "ru") return docLang;
   const stored = localStorage.getItem("lang")?.trim();
   if (stored === "en" || stored === "ru") return stored;
   return "ru";
@@ -27,6 +29,8 @@ function getInitialLang(): Lang {
 
 function getInitialTheme(): Theme {
   if (typeof window === "undefined") return "dark";
+  const docTheme = document.documentElement.dataset.theme?.trim();
+  if (docTheme === "dark" || docTheme === "light") return docTheme;
   const stored = localStorage.getItem("theme")?.trim();
   if (stored === "dark" || stored === "light") return stored;
   const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? false;
