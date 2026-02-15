@@ -10,7 +10,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "bot": "tsx bot/bot.ts"
+    "bot": "tsx bot/bot.ts",
+    "db:query": "tsx scripts/db-query.ts"
   },
   "dependencies": {
     "@vercel/blob": "^2.0.0",

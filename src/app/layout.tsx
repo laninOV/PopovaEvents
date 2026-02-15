@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import "./globals.css";
-import { Bebas_Neue, Montserrat } from "next/font/google";
+import { Manrope, Unbounded } from "next/font/google";
 import { BottomNav } from "@/components/BottomNav";
 import { EventBootstrap } from "@/components/EventBootstrap";
 import { TelegramGate } from "@/components/TelegramGate";
@@ -9,15 +9,15 @@ import { ProfileGate } from "@/components/ProfileGate";
 import { AppSettingsProvider } from "@/components/AppSettingsProvider";
 import { PageContainer } from "@/components/PageContainer";
 
-const fontSans = Montserrat({
+const fontSans = Manrope({
   subsets: ["latin", "cyrillic"],
   display: "swap",
   variable: "--font-sans-family",
 });
 
-const fontHeading = Bebas_Neue({
-  subsets: ["latin"],
-  weight: "400",
+const fontHeading = Unbounded({
+  subsets: ["latin", "cyrillic"],
+  weight: ["500", "700"],
   display: "swap",
   variable: "--font-heading-family",
 });

@@ -87,6 +87,7 @@ export function BottomNav() {
                 <Link
                   href={item.href}
                   className={["nav-dock-item", active ? "nav-dock-item-active" : ""].join(" ")}
+                  aria-current={active ? "page" : undefined}
                 >
                   <span className="nav-dock-icon" aria-hidden>
                     {item.icon}

@@ -1,5 +1,127 @@
 import crypto from "node:crypto";
-import { sql } from "@vercel/postgres";
+import fs from "node:fs";
+import path from "node:path";
+import Database from "better-sqlite3";
+import { sql as pgSql } from "@vercel/postgres";
+
+type DbMode = "postgres" | "sqlite";
+type PgPrimitive = string | number | boolean | undefined | null;
+type SqlParam = PgPrimitive | Date;
+type QueryResult = {
+  rows: Array<Record<string, unknown>>;
+  rowCount: number;
+};
+
+let resolvedDbMode: DbMode | null = null;
+let sqliteDb: Database.Database | null = null;
+
+function getDbMode(): DbMode {
+  if (resolvedDbMode) return resolvedDbMode;
+
+  const envMode = (process.env.DB_PROVIDER ?? "").trim().toLowerCase();
+  if (envMode === "postgres") {
+    resolvedDbMode = "postgres";
+    return resolvedDbMode;
+  }
+  if (envMode === "sqlite") {
+    resolvedDbMode = "sqlite";
+    return resolvedDbMode;
+  }
+
+  const hasSqlitePath = Boolean(process.env.LOCAL_DB_PATH?.trim() || process.env.SQLITE_PATH?.trim());
+  if (hasSqlitePath) {
+    resolvedDbMode = "sqlite";
+    return resolvedDbMode;
+  }
+
+  const hasPostgresUrl = Boolean(
+    process.env.POSTGRES_URL?.trim() || process.env.DATABASE_URL?.trim() || process.env.NEON_DATABASE_URL?.trim(),
+  );
+  resolvedDbMode = hasPostgresUrl ? "postgres" : "sqlite";
+  return resolvedDbMode;
+}
+
+function getSqlitePath() {
+  return process.env.LOCAL_DB_PATH?.trim() || process.env.SQLITE_PATH?.trim() || path.join(process.cwd(), "data", "dev.sqlite");
+}
+
+function ensureSqliteDb() {
+  if (sqliteDb) return sqliteDb;
+  const sqlitePath = getSqlitePath();
+  fs.mkdirSync(path.dirname(sqlitePath), { recursive: true });
+  const db = new Database(sqlitePath);
+  db.pragma("foreign_keys = ON");
+  db.pragma("journal_mode = WAL");
+  sqliteDb = db;
+  return sqliteDb;
+}
+
+function normalizeSqlParam(value: SqlParam): PgPrimitive {
+  if (value === undefined) return null;
+  if (value instanceof Date) return value.toISOString();
+  return value;
+}
+
+function buildSqliteQuery(strings: TemplateStringsArray) {
+  let query = "";
+  for (let i = 0; i < strings.length; i += 1) {
+    query += strings[i];
+    if (i < strings.length - 1) query += "?";
+  }
+  return query;
+}
+
+function isSelectLikeQuery(query: string) {
+  return /^\s*(SELECT|WITH|PRAGMA)\b/i.test(query);
+}
+
+function hasReturningClause(query: string) {
+  return /\bRETURNING\b/i.test(query);
+}
+
+async function runSqlite(strings: TemplateStringsArray, ...values: SqlParam[]): Promise<QueryResult> {
+  const db = ensureSqliteDb();
+  const query = buildSqliteQuery(strings);
+  const params = values.map(normalizeSqlParam);
+  const stmt = db.prepare(query);
+
+  if (isSelectLikeQuery(query) || hasReturningClause(query)) {
+    const rows = stmt.all(...params) as Array<Record<string, unknown>>;
+    return { rows, rowCount: rows.length };
+  }
+
+  const info = stmt.run(...params);
+  return { rows: [], rowCount: Number(info.changes ?? 0) };
+}
+
+async function runPostgres(strings: TemplateStringsArray, ...values: SqlParam[]): Promise<QueryResult> {
+  ensurePostgresUrl();
+  const params = values.map(normalizeSqlParam);
+  const result = await pgSql(strings, ...params);
+  const rows = (result.rows ?? []) as Array<Record<string, unknown>>;
+  const rowCount = Number((result as { rowCount?: number }).rowCount ?? rows.length);
+  return { rows, rowCount };
+}
+
+async function sql(strings: TemplateStringsArray, ...values: SqlParam[]): Promise<QueryResult> {
+  if (getDbMode() === "sqlite") return runSqlite(strings, ...values);
+  return runPostgres(strings, ...values);
+}
+
+function assertIdentifier(value: string) {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(value)) {
+    throw new Error(`invalid_identifier:${value}`);
+  }
+}
+
+async function addSqliteColumnIfMissing(table: string, column: string, definition: string) {
+  assertIdentifier(table);
+  assertIdentifier(column);
+  const db = ensureSqliteDb();
+  const rows = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+  if (rows.some((r) => r.name === column)) return;
+  db.prepare(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`).run();
+}
 
 export type DbUser = {
   id: string;
@@ -105,7 +227,6 @@ function ensurePostgresUrl() {
 
 async function ensureDb() {
   if (!initPromise) {
-    ensurePostgresUrl();
     initPromise = initDb();
   }
   await initPromise;
@@ -135,7 +256,11 @@ async function initDb() {
   `;
 
   // Backward-compatible migrations for existing tables
-  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_photo_url TEXT`;
+  if (getDbMode() === "sqlite") {
+    await addSqliteColumnIfMissing("users", "telegram_photo_url", "TEXT");
+  } else {
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_photo_url TEXT`;
+  }
 
   await sql`
     CREATE TABLE IF NOT EXISTS profiles (
@@ -200,8 +325,13 @@ async function initDb() {
   `;
 
   // Backward-compatible migrations for existing tables
-  await sql`ALTER TABLE meeting_meta ADD COLUMN IF NOT EXISTS planned_at TEXT`;
-  await sql`ALTER TABLE meeting_meta ADD COLUMN IF NOT EXISTS planned_place TEXT`;
+  if (getDbMode() === "sqlite") {
+    await addSqliteColumnIfMissing("meeting_meta", "planned_at", "TEXT");
+    await addSqliteColumnIfMissing("meeting_meta", "planned_place", "TEXT");
+  } else {
+    await sql`ALTER TABLE meeting_meta ADD COLUMN IF NOT EXISTS planned_at TEXT`;
+    await sql`ALTER TABLE meeting_meta ADD COLUMN IF NOT EXISTS planned_place TEXT`;
+  }
 
   await sql`
     CREATE TABLE IF NOT EXISTS speakers (

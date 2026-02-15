@@ -31,6 +31,22 @@ export type I18nKey =
   | "home.open"
   | "home.participants"
   | "home.programSpeakers"
+  | "home.profile.cardTitle"
+  | "home.profile.openProfile"
+  | "profile.title"
+  | "profile.edit"
+  | "profile.qr"
+  | "profile.empty.title"
+  | "profile.empty.body"
+  | "profile.empty.cta"
+  | "profile.section.about"
+  | "profile.section.helpful"
+  | "profile.section.instagram"
+  | "profile.section.showMore"
+  | "profile.section.showLess"
+  | "profile.notSet"
+  | "profile.loading"
+  | "profile.error"
   | "participants.title"
   | "participants.searchPlaceholder"
   | "participants.empty"
@@ -140,6 +156,23 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "home.open": "Открыть",
     "home.participants": "Участники",
     "home.programSpeakers": "Программа / Спикеры",
+    "home.profile.cardTitle": "Мой профиль",
+    "home.profile.openProfile": "Открыть профиль",
+
+    "profile.title": "Профиль",
+    "profile.edit": "Редактировать",
+    "profile.qr": "Мой QR",
+    "profile.empty.title": "Профиль пока не заполнен",
+    "profile.empty.body": "Добавьте данные о себе, чтобы участники могли легко с вами познакомиться.",
+    "profile.empty.cta": "Заполнить профиль",
+    "profile.section.about": "Коротко о себе",
+    "profile.section.helpful": "Чем могу быть полезен",
+    "profile.section.instagram": "Instagram",
+    "profile.section.showMore": "Показать полностью",
+    "profile.section.showLess": "Свернуть",
+    "profile.notSet": "Не указано",
+    "profile.loading": "Загрузка профиля…",
+    "profile.error": "Не удалось загрузить профиль.",
 
     "participants.title": "Участники",
     "participants.searchPlaceholder": "Введите имя",
@@ -256,6 +289,23 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "home.open": "Open",
     "home.participants": "Participants",
     "home.programSpeakers": "Program / Speakers",
+    "home.profile.cardTitle": "My profile",
+    "home.profile.openProfile": "Open profile",
+
+    "profile.title": "Profile",
+    "profile.edit": "Edit",
+    "profile.qr": "My QR",
+    "profile.empty.title": "Your profile is not filled yet",
+    "profile.empty.body": "Add your details so other participants can connect with you easily.",
+    "profile.empty.cta": "Fill profile",
+    "profile.section.about": "About",
+    "profile.section.helpful": "How I can help",
+    "profile.section.instagram": "Instagram",
+    "profile.section.showMore": "Show more",
+    "profile.section.showLess": "Show less",
+    "profile.notSet": "Not set",
+    "profile.loading": "Loading profile…",
+    "profile.error": "Failed to load profile.",
 
     "participants.title": "Participants",
     "participants.searchPlaceholder": "Enter name",

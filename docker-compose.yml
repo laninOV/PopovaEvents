@@ -16,6 +16,7 @@ services:
       - postgres
     environment:
       NODE_ENV: production
+      DB_PROVIDER: postgres
       POSTGRES_URL: ${POSTGRES_URL:-postgres://postgres:postgres@postgres:5432/popova_events}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       DEFAULT_EVENT_SLUG: ${DEFAULT_EVENT_SLUG:-default}
@@ -40,6 +41,7 @@ services:
       DEFAULT_EVENT_SLUG: ${DEFAULT_EVENT_SLUG:-default}
       WELCOME_TEXT: ${WELCOME_TEXT:-}
       CONTACT_TEXT: ${CONTACT_TEXT:-}
+      DB_PROVIDER: postgres
       POSTGRES_URL: ${POSTGRES_URL:-postgres://postgres:postgres@postgres:5432/popova_events}
       QR_SECRET: ${QR_SECRET}
       ALLOW_UNSIGNED_QR: ${ALLOW_UNSIGNED_QR:-0}

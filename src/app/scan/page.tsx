@@ -20,6 +20,9 @@ export default function ScanPage() {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const controlsRef = useRef<IScannerControls | null>(null);
+  const qrTabId = "scan-qr-tab";
+  const scanTabId = "scan-current-tab";
+  const scanPanelId = "scan-panel";
 
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -82,56 +85,73 @@ export default function ScanPage() {
     <main className="space-y-4">
       <header className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl">Сканировать QR-код</h1>
-        <p className="mt-1 text-sm text-zinc-600">
-          Наведите камеру на QR другого участника — встреча появится у вас обоих.
-        </p>
+          <h1 className="text-[1.9rem] leading-tight">Сканировать QR-код</h1>
+          <p className="mt-1 text-sm text-[color:var(--muted-fg)]">
+            Наведите камеру на QR другого участника — встреча появится у вас обоих.
+          </p>
         </div>
         <AppToggles />
       </header>
 
-      <section className="grid grid-cols-2 gap-2">
-        <Link href="/qr" className="btn btn-primary">
-          {t("home.qr")}
-        </Link>
-        <div className="btn bg-zinc-200 text-zinc-500">{t("home.scan")}</div>
-      </section>
-
-      {error ? (
-        <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-900">{error}</div>
-      ) : null}
-
-      <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-black">
-        <video ref={videoRef} className="h-80 w-full object-cover" muted playsInline />
-      </section>
-
-      <section className="card p-4">
-        <div className="text-sm font-medium">Если камера недоступна</div>
-        <div className="mt-1 text-xs text-[color:var(--muted-fg)]">
-          Код берётся из раздела «Мой QR» — его можно скопировать кнопкой «Скопировать код».
-        </div>
-        <div className="mt-2 flex gap-2">
-          <input
-            value={manual}
-            onChange={(e) => setManual(e.target.value)}
-            className="input flex-1"
-            placeholder="Вставьте код"
-          />
+      <section className="segmented" role="tablist" aria-label={`${t("home.qr")} / ${t("home.scan")}`}>
+        <div className="segmented-track grid-cols-2">
+          <Link
+            href="/qr"
+            id={qrTabId}
+            role="tab"
+            aria-selected={false}
+            aria-controls={scanPanelId}
+            tabIndex={-1}
+            className="segmented-tab"
+          >
+            {t("home.qr")}
+          </Link>
           <button
             type="button"
-            disabled={!manual.trim() || busy}
-            onClick={() => handleCode(manual)}
-            className={[
-              "btn px-4",
-              !manual.trim() || busy
-                ? "bg-zinc-200 text-zinc-500"
-                : "btn-primary",
-            ].join(" ")}
+            id={scanTabId}
+            role="tab"
+            aria-selected={true}
+            aria-controls={scanPanelId}
+            className="segmented-tab segmented-tab-active"
           >
-            OK
+            <span>{t("home.scan")}</span>
+            <span className="segmented-tab-indicator" aria-hidden />
           </button>
         </div>
       </section>
+
+      <div id={scanPanelId} role="tabpanel" aria-labelledby={scanTabId} className="space-y-4">
+        {error ? (
+          <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-900">{error}</div>
+        ) : null}
+
+        <section className="overflow-hidden rounded-2xl border border-[color:var(--border)] bg-black">
+          <video ref={videoRef} className="h-80 w-full object-cover" muted playsInline />
+        </section>
+
+        <section className="card p-4">
+          <div className="text-sm font-medium">Если камера недоступна</div>
+          <div className="mt-1 text-xs text-[color:var(--muted-fg)]">
+            Код берётся из раздела «Мой QR» — его можно скопировать кнопкой «Скопировать код».
+          </div>
+          <div className="mt-2 flex gap-2">
+            <input
+              value={manual}
+              onChange={(e) => setManual(e.target.value)}
+              className="input flex-1"
+              placeholder="Вставьте код"
+            />
+            <button
+              type="button"
+              disabled={!manual.trim() || busy}
+              onClick={() => handleCode(manual)}
+              className={["btn px-4", !manual.trim() || busy ? "bg-zinc-200 text-zinc-500" : "btn-primary"].join(" ")}
+            >
+              OK
+            </button>
+          </div>
+        </section>
+      </div>
     </main>
   );
 }

@@ -14,7 +14,9 @@ npm install
 cp .env.example .env
 ```
 
-3) Поднять Postgres (например, `docker compose up -d postgres`) и указать `POSTGRES_URL`.
+3) По умолчанию используется локальная SQLite (`DB_PROVIDER=sqlite`, файл `LOCAL_DB_PATH`).
+Если нужен Postgres, укажите `DB_PROVIDER=postgres` и `POSTGRES_URL`
+(например, можно поднять `docker compose up -d postgres`).
 
 4) Запустить dev‑сервер:
 
@@ -45,8 +47,23 @@ npm run bot
 
 ## Хранилище
 
-- Postgres: строка подключения берётся из `POSTGRES_URL` (для Vercel Postgres задаётся автоматически).
+- SQLite (локально): по умолчанию `DB_PROVIDER=sqlite`, файл БД задаётся `LOCAL_DB_PATH` (или `SQLITE_PATH`), иначе `data/dev.sqlite`.
+- Postgres (опционально): `DB_PROVIDER=postgres`, строка подключения берётся из `POSTGRES_URL` (для Vercel Postgres задаётся автоматически).
 - Фото сохраняются в Vercel Blob (`BLOB_READ_WRITE_TOKEN`).
+
+## SQL-запросы к локальной БД
+
+- Выполнить произвольный SQL:
+
+```bash
+npm run db:query -- "SELECT * FROM users LIMIT 10"
+```
+
+- Пример выборки профилей:
+
+```bash
+npm run db:query -- "SELECT u.telegram_id, p.first_name, p.instagram, p.updated_at FROM users u LEFT JOIN profiles p ON p.user_id = u.id ORDER BY p.updated_at DESC LIMIT 20"
+```
 
 ## Ивенты
 
