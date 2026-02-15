@@ -66,6 +66,40 @@ export type I18nKey =
   | "form.placeholder.niche"
   | "form.placeholder.about"
   | "form.placeholder.helpful"
+  | "form.wizard.progress"
+  | "form.wizard.stepsAria"
+  | "form.wizard.actionsAria"
+  | "form.wizard.step.basic"
+  | "form.wizard.step.contacts"
+  | "form.wizard.step.about"
+  | "form.step.basic.title"
+  | "form.step.basic.subtitle"
+  | "form.step.contacts.title"
+  | "form.step.contacts.subtitle"
+  | "form.step.about.title"
+  | "form.step.about.subtitle"
+  | "form.review.title"
+  | "form.review.name"
+  | "form.review.instagram"
+  | "form.review.niche"
+  | "form.review.about"
+  | "form.review.helpful"
+  | "form.review.notSet"
+  | "form.action.next"
+  | "form.action.back"
+  | "form.action.home"
+  | "form.success.title"
+  | "form.success.body"
+  | "form.success.redirecting"
+  | "form.photoPreviewAlt"
+  | "form.error.load"
+  | "form.error.required"
+  | "form.error.save"
+  | "form.error.uploadGeneric"
+  | "form.error.uploadMissingBlobToken"
+  | "form.error.uploadFailed"
+  | "form.error.fileTooLarge"
+  | "form.error.unsupportedType"
   | "gate.telegram.title"
   | "gate.telegram.body"
   | "gate.dev.title"
@@ -145,6 +179,42 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "form.placeholder.niche": "Коротко (до 80 символов)",
     "form.placeholder.about": "Кто вы и чем занимаетесь? (до 300 символов)",
     "form.placeholder.helpful": "Например: знакомства, интро, экспертиза… (до 300 символов)",
+    "form.wizard.progress": "Шаг {current} из {total}",
+    "form.wizard.stepsAria": "Шаги регистрации",
+    "form.wizard.actionsAria": "Действия формы регистрации",
+    "form.wizard.step.basic": "Основное",
+    "form.wizard.step.contacts": "Контакты",
+    "form.wizard.step.about": "О себе",
+    "form.step.basic.title": "Основное",
+    "form.step.basic.subtitle": "Добавьте фото и имя, чтобы вас легко нашли на ивенте.",
+    "form.step.contacts.title": "Контакты",
+    "form.step.contacts.subtitle": "Укажите, где с вами связаться и вашу нишу.",
+    "form.step.about.title": "О себе",
+    "form.step.about.subtitle": "Кратко расскажите, чем вы занимаетесь и чем полезны.",
+    "form.review.title": "Проверить перед сохранением",
+    "form.review.name": "Имя",
+    "form.review.instagram": "Instagram",
+    "form.review.niche": "Ниша",
+    "form.review.about": "О себе",
+    "form.review.helpful": "Чем полезен",
+    "form.review.notSet": "Не указано",
+    "form.action.next": "Далее",
+    "form.action.back": "Назад",
+    "form.action.home": "На главную",
+    "form.success.title": "Профиль сохранен",
+    "form.success.body": "Регистрация завершена. Переходим к главному экрану.",
+    "form.success.redirecting": "Автопереход…",
+    "form.photoPreviewAlt": "Фото профиля",
+    "form.error.load": "Ошибка загрузки",
+    "form.error.required": "Заполните обязательные поля.",
+    "form.error.save": "Ошибка сохранения",
+    "form.error.uploadGeneric": "Не удалось загрузить фото",
+    "form.error.uploadMissingBlobToken":
+      "На сервере не настроено хранилище для фото (Vercel Blob). Добавьте BLOB_READ_WRITE_TOKEN и сделайте redeploy.",
+    "form.error.uploadFailed":
+      "Не удалось загрузить фото. Проверьте Vercel Blob и переменную BLOB_READ_WRITE_TOKEN (затем redeploy).",
+    "form.error.fileTooLarge": "Файл слишком большой (до 5MB).",
+    "form.error.unsupportedType": "Неподдерживаемый формат. Используйте PNG/JPG/WebP.",
 
     "gate.telegram.title": "Откройте через Telegram",
     "gate.telegram.body":
@@ -225,6 +295,42 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "form.placeholder.niche": "Short (up to 80 chars)",
     "form.placeholder.about": "Who are you and what do you do? (up to 300 chars)",
     "form.placeholder.helpful": "e.g. intros, expertise, partnerships… (up to 300 chars)",
+    "form.wizard.progress": "Step {current} of {total}",
+    "form.wizard.stepsAria": "Registration steps",
+    "form.wizard.actionsAria": "Registration form actions",
+    "form.wizard.step.basic": "Basics",
+    "form.wizard.step.contacts": "Contacts",
+    "form.wizard.step.about": "About",
+    "form.step.basic.title": "Basics",
+    "form.step.basic.subtitle": "Add your photo and name so people can recognize you.",
+    "form.step.contacts.title": "Contacts",
+    "form.step.contacts.subtitle": "Share how people can reach you and your niche.",
+    "form.step.about.title": "About",
+    "form.step.about.subtitle": "Briefly describe what you do and how you can help.",
+    "form.review.title": "Review before saving",
+    "form.review.name": "Name",
+    "form.review.instagram": "Instagram",
+    "form.review.niche": "Niche",
+    "form.review.about": "About",
+    "form.review.helpful": "How I can help",
+    "form.review.notSet": "Not set",
+    "form.action.next": "Next",
+    "form.action.back": "Back",
+    "form.action.home": "Go home",
+    "form.success.title": "Profile saved",
+    "form.success.body": "Registration is complete. Redirecting to the home screen.",
+    "form.success.redirecting": "Auto redirect…",
+    "form.photoPreviewAlt": "Profile photo",
+    "form.error.load": "Loading error",
+    "form.error.required": "Please fill required fields.",
+    "form.error.save": "Save error",
+    "form.error.uploadGeneric": "Failed to upload photo",
+    "form.error.uploadMissingBlobToken":
+      "Photo storage is not configured on the server (Vercel Blob). Add BLOB_READ_WRITE_TOKEN and redeploy.",
+    "form.error.uploadFailed":
+      "Failed to upload photo. Check Vercel Blob and BLOB_READ_WRITE_TOKEN, then redeploy.",
+    "form.error.fileTooLarge": "File is too large (up to 5MB).",
+    "form.error.unsupportedType": "Unsupported format. Use PNG/JPG/WebP.",
 
     "gate.telegram.title": "Open in Telegram",
     "gate.telegram.body": "This Mini App works inside Telegram. Open it from the bot using the WebApp button.",

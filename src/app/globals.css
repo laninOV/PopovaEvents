@@ -209,6 +209,180 @@ h4 {
   }
 }
 
+.form-wizard-shell {
+  padding-bottom: calc(110px + env(safe-area-inset-bottom));
+}
+
+.form-wizard-progress-pill {
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--muted) 72%, transparent);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted-fg);
+}
+
+.form-wizard-progress {
+  overflow: hidden;
+  height: 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--foreground) 14%, transparent);
+  background: color-mix(in srgb, var(--muted) 70%, transparent);
+}
+
+.form-wizard-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--primary) 82%, transparent),
+    color-mix(in srgb, var(--accent) 70%, transparent)
+  );
+  transition: width 180ms ease;
+}
+
+.form-wizard-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.form-wizard-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 86%, transparent);
+  padding: 8px;
+}
+
+.form-wizard-step-dot {
+  display: inline-flex;
+  height: 22px;
+  width: 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.form-wizard-step-label {
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.form-wizard-step-done {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+}
+
+.form-wizard-step-done .form-wizard-step-dot {
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  background: color-mix(in srgb, var(--accent) 82%, transparent);
+  color: #fff;
+}
+
+.form-wizard-step-current {
+  border-color: color-mix(in srgb, var(--primary) 45%, transparent);
+  background: color-mix(in srgb, var(--primary) 8%, var(--card));
+}
+
+.form-wizard-step-current .form-wizard-step-dot {
+  border-color: color-mix(in srgb, var(--primary) 45%, transparent);
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+  color: var(--foreground);
+}
+
+.form-wizard-step-current .form-wizard-step-label {
+  color: var(--foreground);
+}
+
+.form-wizard-step-upcoming .form-wizard-step-dot {
+  color: var(--muted-fg);
+}
+
+@keyframes wizard-step-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .form-wizard-panel {
+    animation: wizard-step-enter 170ms ease-out;
+  }
+}
+
+.form-review {
+  border-radius: 14px;
+  border-color: color-mix(in srgb, var(--foreground) 12%, transparent);
+  background: color-mix(in srgb, var(--muted) 68%, transparent);
+  box-shadow: none;
+}
+
+.form-wizard-actions {
+  position: sticky;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  z-index: 15;
+}
+
+.form-wizard-actions-inner {
+  display: flex;
+  gap: 10px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--foreground) 14%, transparent);
+  background: color-mix(in srgb, var(--card) 74%, transparent);
+  padding: 10px;
+  backdrop-filter: blur(12px) saturate(130%);
+}
+
+.form-wizard-actions .btn:focus-visible,
+.form-success-panel .btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 70%, transparent);
+  outline-offset: 2px;
+}
+
+.form-success-panel {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  border-color: color-mix(in srgb, var(--accent) 46%, transparent);
+  background: radial-gradient(
+      220px 120px at 12% 8%,
+      color-mix(in srgb, var(--accent) 20%, transparent),
+      transparent 70%
+    ),
+    var(--card);
+}
+
+.form-success-mark {
+  display: inline-flex;
+  height: 36px;
+  width: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+  background: color-mix(in srgb, var(--accent) 80%, transparent);
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+}
+
 .nav-dock {
   border-radius: 28px;
   border: 1px solid color-mix(in srgb, var(--foreground) 14%, transparent);
