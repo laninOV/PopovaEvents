@@ -47,6 +47,9 @@ export type I18nKey =
   | "profile.notSet"
   | "profile.loading"
   | "profile.error"
+  | "profile.stats.meetings"
+  | "profile.stats.rated"
+  | "profile.stats.notes"
   | "participants.title"
   | "participants.searchPlaceholder"
   | "participants.empty"
@@ -173,6 +176,9 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "profile.notSet": "Не указано",
     "profile.loading": "Загрузка профиля…",
     "profile.error": "Не удалось загрузить профиль.",
+    "profile.stats.meetings": "Знакомства",
+    "profile.stats.rated": "Оценки",
+    "profile.stats.notes": "Заметки",
 
     "participants.title": "Участники",
     "participants.searchPlaceholder": "Введите имя",
@@ -306,6 +312,9 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "profile.notSet": "Not set",
     "profile.loading": "Loading profile…",
     "profile.error": "Failed to load profile.",
+    "profile.stats.meetings": "Connections",
+    "profile.stats.rated": "Rated",
+    "profile.stats.notes": "Notes",
 
     "participants.title": "Participants",
     "participants.searchPlaceholder": "Enter name",

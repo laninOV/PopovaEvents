@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { AppToggles } from "@/components/AppToggles";
+import { useAppSettings } from "@/components/AppSettingsProvider";
 import { apiFetch } from "@/lib/api";
 import { getTelegramUnsafeUser, tgReady } from "@/lib/tgWebApp";
-import { useAppSettings } from "@/components/AppSettingsProvider";
 
 type Profile = {
   firstName: string;
@@ -14,6 +15,15 @@ type Profile = {
   about: string | null;
   helpful: string | null;
   photoUrl: string | null;
+};
+
+type MeResponse = {
+  stats: {
+    meetingsCount: number;
+    ratedCount: number;
+    avgRating: number | null;
+    notesCount: number;
+  };
 };
 
 function normalizeInstagramLink(value: string) {
@@ -27,17 +37,36 @@ function normalizeInstagramLink(value: string) {
 export default function ProfilePage() {
   const { t } = useAppSettings();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [stats, setStats] = useState<MeResponse["stats"] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [helpfulOpen, setHelpfulOpen] = useState(false);
 
   useEffect(() => {
+    let active = true;
     tgReady();
-    apiFetch<{ profile: Profile | null }>("/api/profile")
-      .then((r) => setProfile(r.profile))
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : t("profile.error")))
-      .finally(() => setLoading(false));
+    Promise.allSettled([apiFetch<{ profile: Profile | null }>("/api/profile"), apiFetch<MeResponse>("/api/me")])
+      .then(([profileResult, meResult]) => {
+        if (!active) return;
+
+        if (profileResult.status === "fulfilled") {
+          setProfile(profileResult.value.profile);
+        } else {
+          const reason = profileResult.reason;
+          setError(reason instanceof Error ? reason.message : t("profile.error"));
+        }
+
+        if (meResult.status === "fulfilled") {
+          setStats(meResult.value.stats);
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, [t]);
 
   const displayName = useMemo(() => {
@@ -61,14 +90,15 @@ export default function ProfilePage() {
   const nicheText = profile?.niche?.trim() || t("profile.notSet");
 
   return (
-    <main className="space-y-5">
-      <header className="flex items-center justify-between">
+    <main className="profile-page space-y-4">
+      <header className="profile-header flex items-center justify-between gap-3">
         <h1 className="text-[1.9rem] leading-tight">{t("profile.title")}</h1>
-        {profile ? (
-          <Link href="/form" className="btn btn-ghost h-10">
+        <div className="profile-header-actions">
+          <AppToggles />
+          <Link href="/form" className="btn btn-ghost h-10 px-4">
             {t("profile.edit")}
           </Link>
-        ) : null}
+        </div>
       </header>
 
       {loading ? <div className="text-sm text-[color:var(--muted-fg)]">{t("profile.loading")}</div> : null}
@@ -91,7 +121,7 @@ export default function ProfilePage() {
 
       {!loading && !error && profile ? (
         <>
-          <section className="card profile-hero p-5">
+          <section className="card profile-hero profile-hero-elevated p-5">
             <div className="flex items-start gap-3">
               {fallbackPhotoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -107,11 +137,11 @@ export default function ProfilePage() {
               )}
 
               <div className="profile-meta min-w-0 flex-1">
-                <div className="text-[1.5rem] font-semibold tracking-[0.01em]">{displayName}</div>
+                <div className="profile-display-name text-[1.5rem] font-semibold tracking-[0.01em]">{displayName}</div>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <span className="profile-chip">{nicheText}</span>
                 </div>
-                <div className="mt-3 text-sm">
+                <div className="profile-hero-row mt-3 text-sm">
                   <span className="text-[color:var(--muted-fg)]">{t("profile.section.instagram")}:</span>{" "}
                   {instagramHref ? (
                     <a href={instagramHref} className="text-accent underline underline-offset-2" target="_blank" rel="noreferrer">
@@ -125,17 +155,31 @@ export default function ProfilePage() {
             </div>
 
             <div className="profile-actions mt-4">
-              <Link href="/qr" className="btn btn-primary flex-1">
+              <Link href="/qr" className="btn btn-primary w-full">
                 {t("profile.qr")}
-              </Link>
-              <Link href="/form" className="btn btn-ghost flex-1">
-                {t("profile.edit")}
               </Link>
             </div>
           </section>
 
+          {stats ? (
+            <section className="profile-metrics" aria-label={t("profile.title")}>
+              <article className="profile-metric-pill">
+                <div className="profile-metric-label">{t("profile.stats.meetings")}</div>
+                <div className="profile-metric-value">{stats.meetingsCount}</div>
+              </article>
+              <article className="profile-metric-pill">
+                <div className="profile-metric-label">{t("profile.stats.rated")}</div>
+                <div className="profile-metric-value">{stats.ratedCount}</div>
+              </article>
+              <article className="profile-metric-pill">
+                <div className="profile-metric-label">{t("profile.stats.notes")}</div>
+                <div className="profile-metric-value">{stats.notesCount}</div>
+              </article>
+            </section>
+          ) : null}
+
           <section className="card profile-section p-4">
-            <div className="flex items-start justify-between gap-3">
+            <div className="profile-section-head flex items-start justify-between gap-3">
               <h2 className="text-base font-semibold tracking-[0.01em]">{t("profile.section.about")}</h2>
               {aboutText ? (
                 <button
@@ -162,7 +206,7 @@ export default function ProfilePage() {
           </section>
 
           <section className="card profile-section p-4">
-            <div className="flex items-start justify-between gap-3">
+            <div className="profile-section-head flex items-start justify-between gap-3">
               <h2 className="text-base font-semibold tracking-[0.01em]">{t("profile.section.helpful")}</h2>
               {helpfulText ? (
                 <button
