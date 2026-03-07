@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { tgReady } from "@/lib/tgWebApp";
+import { utcIsoToLocalDateTime } from "@/lib/timezone";
 
 type Speaker = { id: string; name: string };
 type Item = {
@@ -17,22 +18,15 @@ type Item = {
   sortOrder: number;
 };
 
-function toLocalInput(iso: string) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function fromLocalInput(value: string) {
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toISOString();
-}
+type ProgramAdminResponse = {
+  schedule: Item[];
+  eventTimeZone: string;
+};
 
 export default function AdminProgramPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
+  const [eventTimeZone, setEventTimeZone] = useState("Europe/Moscow");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -50,8 +44,12 @@ export default function AdminProgramPage() {
 
   async function reload() {
     setError(null);
-    const [p, s] = await Promise.all([apiFetch<{ schedule: Item[] }>("/api/admin/program"), apiFetch<{ speakers: Speaker[] }>("/api/admin/speakers")]);
+    const [p, s] = await Promise.all([
+      apiFetch<ProgramAdminResponse>("/api/admin/program"),
+      apiFetch<{ speakers: Speaker[] }>("/api/admin/speakers"),
+    ]);
     setItems(p.schedule);
+    setEventTimeZone((p.eventTimeZone ?? "").trim() || "Europe/Moscow");
     setSpeakers(s.speakers);
   }
 
@@ -72,14 +70,12 @@ export default function AdminProgramPage() {
     setSaving(true);
     setError(null);
     try {
-      const startsIso = fromLocalInput(startsAt);
-      if (!startsIso) throw new Error("Некорректное время начала");
-      const endsIso = endsAt.trim() ? fromLocalInput(endsAt) : null;
+      if (!startsAt.trim()) throw new Error("Некорректное время начала");
       await apiFetch("/api/admin/program", {
         method: "POST",
         body: JSON.stringify({
-          startsAt: startsIso,
-          endsAt: endsIso,
+          startsAtLocal: startsAt.trim(),
+          endsAtLocal: endsAt.trim() || null,
           title: title.trim(),
           description: description.trim() || null,
           speakerId: speakerId.trim() || null,
@@ -153,6 +149,7 @@ export default function AdminProgramPage() {
 
       <section className="card p-4">
         <div className="text-sm font-semibold">Добавить пункт</div>
+        <div className="mt-1 text-xs text-zinc-600">Часовой пояс: {eventTimeZone}</div>
         <div className="mt-3 grid gap-3">
           <label className="grid gap-1">
             <span className="text-sm text-zinc-600">Начало *</span>
@@ -191,8 +188,8 @@ export default function AdminProgramPage() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="text-sm text-zinc-600">
-                  {toLocalInput(it.startsAt).replace("T", " ")}
-                  {it.endsAt ? ` – ${toLocalInput(it.endsAt).replace("T", " ")}` : ""}
+                  {utcIsoToLocalDateTime(it.startsAt, eventTimeZone).replace("T", " ")}
+                  {it.endsAt ? ` – ${utcIsoToLocalDateTime(it.endsAt, eventTimeZone).replace("T", " ")}` : ""}
                 </div>
                 <div className="mt-1 text-base font-semibold">{it.title}</div>
                 {it.speakerId ? <div className="text-sm text-zinc-600">{speakersById.get(it.speakerId) ?? it.speakerId}</div> : null}

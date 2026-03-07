@@ -3,13 +3,14 @@ import { z } from "zod";
 import { listSchedule, upsertScheduleItem } from "@/lib/dbx";
 import { isAdminTelegramId } from "@/lib/admin";
 import { resolveRequestContext } from "@/lib/requestContext";
+import { getDefaultEventTimeZone, localDateTimeToUtcIso } from "@/lib/timezone";
 
 export const runtime = "nodejs";
 
 const ItemSchema = z.object({
   id: z.string().trim().min(1).optional(),
-  startsAt: z.string().trim().min(1).max(40),
-  endsAt: z.string().trim().max(40).nullable().optional(),
+  startsAtLocal: z.string().trim().min(1).max(40),
+  endsAtLocal: z.string().trim().max(40).nullable().optional(),
   title: z.string().trim().min(1).max(200),
   description: z.string().trim().max(4000).nullable().optional(),
   speakerId: z.string().trim().min(1).nullable().optional(),
@@ -21,7 +22,10 @@ export async function GET(req: NextRequest) {
   const resolved = await resolveRequestContext(req);
   if (!resolved.ok) return resolved.response;
   if (!isAdminTelegramId(resolved.ctx.auth.telegramId)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  return NextResponse.json({ schedule: await listSchedule(resolved.ctx.event.id) });
+  return NextResponse.json({
+    schedule: await listSchedule(resolved.ctx.event.id),
+    eventTimeZone: getDefaultEventTimeZone(),
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -34,11 +38,18 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: "bad_request" }, { status: 400 });
 
   const { event } = resolved.ctx;
+  const eventTimeZone = getDefaultEventTimeZone();
+  const startsAt = localDateTimeToUtcIso(parsed.data.startsAtLocal, eventTimeZone);
+  const endsAt = parsed.data.endsAtLocal?.trim()
+    ? localDateTimeToUtcIso(parsed.data.endsAtLocal, eventTimeZone)
+    : null;
+  if (!startsAt) return NextResponse.json({ error: "bad_request" }, { status: 400 });
+  if (parsed.data.endsAtLocal?.trim() && !endsAt) return NextResponse.json({ error: "bad_request" }, { status: 400 });
 
   const id = await upsertScheduleItem(event.id, {
     id: parsed.data.id,
-    startsAt: parsed.data.startsAt,
-    endsAt: parsed.data.endsAt ?? null,
+    startsAt,
+    endsAt,
     title: parsed.data.title,
     description: parsed.data.description ?? null,
     speakerId: parsed.data.speakerId ?? null,
