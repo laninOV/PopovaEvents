@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getProfileByUserId, setBotUserRegistered, upsertProfile } from "@/lib/db";
+import { getProfileByUserId, mirrorProfileToTenant, setBotUserRegistered, upsertProfile } from "@/lib/dbx";
 import { resolveRequestContext } from "@/lib/requestContext";
 
 export const runtime = "nodejs";
@@ -60,6 +60,7 @@ export async function PUT(req: NextRequest) {
     helpful: parsed.data.helpful ?? null,
     photoUrl: effectivePhotoUrl,
   });
+  await mirrorProfileToTenant(resolved.ctx.event.id, profile);
 
   await setBotUserRegistered(auth.telegramId);
   return NextResponse.json({ ok: true, profile });

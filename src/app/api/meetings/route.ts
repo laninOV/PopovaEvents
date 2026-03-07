@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listMeetings } from "@/lib/db";
+import { listMeetings } from "@/lib/dbx";
 import { resolveRequestContext } from "@/lib/requestContext";
 
 export const runtime = "nodejs";

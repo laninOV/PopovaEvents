@@ -1,23 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureEventParticipant, getOrCreateUserByTelegramId } from "@/lib/db";
-import { getEventForRequest } from "@/lib/getEventForRequest";
-import { getAuthFromRequest } from "@/lib/telegramAuth";
 import { signQrPayload } from "@/lib/qr";
+import { resolveRequestContext } from "@/lib/requestContext";
 
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
-  const auth = getAuthFromRequest(req);
-  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: 401 });
-
-  const event = await getEventForRequest(req);
-  if (!event) return NextResponse.json({ error: "event_not_found" }, { status: 404 });
+  const resolved = await resolveRequestContext(req);
+  if (!resolved.ok) return resolved.response;
 
   const secret = process.env.QR_SECRET?.trim();
   const allowUnsigned = process.env.ALLOW_UNSIGNED_QR === "1";
-
-  const user = await getOrCreateUserByTelegramId(auth.telegramId, auth.telegramUser);
-  await ensureEventParticipant(event.id, user.id);
+  const { event, user } = resolved.ctx;
 
   if (!secret) {
     if (!allowUnsigned) return NextResponse.json({ error: "missing_qr_secret" }, { status: 500 });

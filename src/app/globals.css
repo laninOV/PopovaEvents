@@ -826,6 +826,11 @@ h3 {
   color: #ffffff;
 }
 
+.program-current-speaker {
+  color: color-mix(in srgb, var(--accent) 62%, var(--foreground));
+  font-weight: 600;
+}
+
 .program-next {
   border-color: color-mix(in srgb, var(--primary) 45%, transparent);
   background: linear-gradient(

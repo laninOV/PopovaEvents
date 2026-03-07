@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getChatLink, getProfileByUserId, getStats, listMeetings } from "@/lib/db";
+import { getChatLinkForEvent, getProfileByUserId, getStats, listMeetings } from "@/lib/dbx";
 import type { BootstrapResponse } from "@/lib/bootstrap";
 import { resolveRequestContext } from "@/lib/requestContext";
 
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     getProfileByUserId(user.id),
     getStats(event.id, user.id),
     listMeetings(event.id, user.id),
-    getChatLink(),
+    getChatLinkForEvent(event.id),
   ]);
 
   const payload: BootstrapResponse = {

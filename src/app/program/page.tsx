@@ -27,6 +27,12 @@ type ScheduleItem = {
   sortOrder: number;
 };
 
+type ProgramResponse = {
+  schedule: ScheduleItem[];
+  speakers: Speaker[];
+  serverNow?: string;
+};
+
 type ParsedScheduleItem = {
   item: ScheduleItem;
   start: Date;
@@ -126,32 +132,31 @@ export default function ProgramPage() {
   }, []);
 
   useEffect(() => {
+    let active = true;
     tgReady();
-    apiFetch<{ schedule: ScheduleItem[]; speakers: Speaker[] }>("/api/program")
+    apiFetch<ProgramResponse>("/api/program")
       .then((r) => {
+        if (!active) return;
         setItems(r.schedule);
         setSpeakers(r.speakers);
+        const serverNow = parseScheduleDateTime(r.serverNow ?? null);
+        timeCorrectionMsRef.current = serverNow ? serverNow.getTime() - Date.now() : 0;
+        setNow(new Date(Date.now() + timeCorrectionMsRef.current));
       })
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : "Ошибка"))
-      .finally(() => setLoading(false));
+      .catch((e: unknown) => {
+        if (!active) return;
+        setError(e instanceof Error ? e.message : "Ошибка");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
-    // If the device clock is off, Telegram's auth_date gives us a sane reference (server-side epoch seconds).
-    try {
-      const tg = (window as unknown as { Telegram?: { WebApp?: { initDataUnsafe?: { auth_date?: unknown } } } })
-        .Telegram?.WebApp;
-      const authDateSec = tg?.initDataUnsafe?.auth_date;
-      if (typeof authDateSec === "number" && Number.isFinite(authDateSec) && authDateSec > 0) {
-        const authMs = authDateSec * 1000;
-        const offset = authMs - Date.now();
-        // Apply correction only if the drift is significant (2+ minutes).
-        if (Math.abs(offset) > 2 * 60 * 1000) timeCorrectionMsRef.current = offset;
-      }
-    } catch {
-      // ignore
-    }
-
     const tick = () => setNow(new Date(Date.now() + timeCorrectionMsRef.current));
     tick();
     const id = setInterval(tick, 30 * 1000);
@@ -186,38 +191,20 @@ export default function ProgramPage() {
     () => new Map(parsedTimeline.map((entry) => [entry.item.id, entry])),
     [parsedTimeline],
   );
-  const focus = useMemo(() => {
-    const speakerIdSet = new Set(speakers.map((s) => s.id));
-    let current: ParsedScheduleItem | null = null;
-    for (const x of parsedTimeline) {
-      if (now >= x.start && now < x.effectiveEnd) {
-        current = x;
-        break;
+  const speakerIdSet = useMemo(() => new Set(speakers.map((s) => s.id)), [speakers]);
+  const current = useMemo<ParsedScheduleItem | null>(() => {
+    let currentItem: ParsedScheduleItem | null = null;
+    for (const entry of parsedTimeline) {
+      if (now >= entry.start && now < entry.effectiveEnd) {
+        // Keep the last active item: when slots overlap, we select the latest started one.
+        currentItem = entry;
       }
     }
-
-    let next: ParsedScheduleItem | null = null;
-    for (const x of parsedTimeline) {
-      if (x.start > now && (!next || x.start < next.start)) next = x;
-    }
-
-    const focused = current ?? next ?? (parsedTimeline.length ? parsedTimeline[parsedTimeline.length - 1] : null);
-    const kind: "current" | "next" | "closest" | null = current ? "current" : next ? "next" : focused ? "closest" : null;
-
-    const focusedWithSpeaker =
-      focused?.item.speakerId && speakerIdSet.has(focused.item.speakerId)
-        ? focused
-        : (kind === "next" ? next : null) ||
-          parsedTimeline.find((x) => x.start > now && x.item.speakerId && speakerIdSet.has(x.item.speakerId)) ||
-          parsedTimeline.find((x) => x.item.speakerId && speakerIdSet.has(x.item.speakerId)) ||
-          null;
-
-    return {
-      kind,
-      itemId: focused?.item.id ?? null,
-      speakerId: focusedWithSpeaker?.item.speakerId ?? speakers[0]?.id ?? null,
-    };
-  }, [now, parsedTimeline, speakers]);
+    return currentItem;
+  }, [now, parsedTimeline]);
+  const currentItemId = current?.item.id ?? null;
+  const currentSpeakerId =
+    current?.item.speakerId && speakerIdSet.has(current.item.speakerId) ? current.item.speakerId : null;
 
   function scrollToEl(el: HTMLElement | null) {
     if (!el) return;
@@ -230,38 +217,44 @@ export default function ProgramPage() {
 
   useEffect(() => {
     if (tab !== "program") return;
-    if (!focus.itemId) return;
-    const itemId = focus.itemId;
-    if (lastProgramScrollIdRef.current === itemId) return;
-    lastProgramScrollIdRef.current = itemId;
-    const el = programRefs.current[itemId] ?? document.getElementById(`program-item-${itemId}`);
+    if (!currentItemId) {
+      lastProgramScrollIdRef.current = null;
+      return;
+    }
+    if (lastProgramScrollIdRef.current === currentItemId) return;
+    lastProgramScrollIdRef.current = currentItemId;
+    const el = programRefs.current[currentItemId] ?? document.getElementById(`program-item-${currentItemId}`);
     scrollToEl(el);
     const tId = setTimeout(() => {
-      const retry = programRefs.current[itemId] ?? document.getElementById(`program-item-${itemId}`);
+      const retry = programRefs.current[currentItemId] ?? document.getElementById(`program-item-${currentItemId}`);
       scrollToEl(retry);
     }, 350);
     return () => clearTimeout(tId);
-  }, [tab, focus.itemId]);
+  }, [tab, currentItemId]);
 
   useEffect(() => {
     if (tab !== "speakers") return;
-    if (!focus.speakerId) return;
-    const speakerId = focus.speakerId;
+    if (!currentSpeakerId) {
+      lastSpeakerScrollIdRef.current = null;
+      return;
+    }
     const defer = (fn: () => void) => {
       if (typeof queueMicrotask === "function") queueMicrotask(fn);
       else setTimeout(fn, 0);
     };
-    defer(() => setExpandedSpeakerId(speakerId));
-    if (lastSpeakerScrollIdRef.current === speakerId) return;
-    lastSpeakerScrollIdRef.current = speakerId;
-    const el = speakerRefs.current[speakerId] ?? document.getElementById(`speaker-item-${speakerId}`);
+    defer(() => setExpandedSpeakerId(currentSpeakerId));
+    if (lastSpeakerScrollIdRef.current === currentSpeakerId) return;
+    lastSpeakerScrollIdRef.current = currentSpeakerId;
+    const el =
+      speakerRefs.current[currentSpeakerId] ?? document.getElementById(`speaker-item-${currentSpeakerId}`);
     scrollToEl(el);
     const tId = setTimeout(() => {
-      const retry = speakerRefs.current[speakerId] ?? document.getElementById(`speaker-item-${speakerId}`);
+      const retry =
+        speakerRefs.current[currentSpeakerId] ?? document.getElementById(`speaker-item-${currentSpeakerId}`);
       scrollToEl(retry);
     }, 350);
     return () => clearTimeout(tId);
-  }, [tab, focus.speakerId]);
+  }, [tab, currentSpeakerId]);
 
   function handleTabsKeyDown(e: KeyboardEvent<HTMLButtonElement>) {
     if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "Home" || e.key === "End") {
@@ -288,7 +281,8 @@ export default function ProgramPage() {
             <div>tz: {Intl.DateTimeFormat().resolvedOptions().timeZone}</div>
             <div>offset(min): {-new Date().getTimezoneOffset()}</div>
             <div>correctionMs: {timeCorrectionMsRef.current}</div>
-            <div>focus: {JSON.stringify(focus)}</div>
+            <div>currentItemId: {currentItemId ?? "—"}</div>
+            <div>currentSpeakerId: {currentSpeakerId ?? "—"}</div>
             <div>items: {items.length}</div>
             <div>sample: {items[0]?.startsAt ?? "—"}</div>
           </div>
@@ -349,13 +343,7 @@ export default function ProgramPage() {
                   }`
                 : it.startsAt;
               const speakerName = it.speakerId ? speakersById.get(it.speakerId) : null;
-              const fallbackEnd = start
-                ? parsed?.effectiveEnd ??
-                  (end && end > start ? end : new Date(start.getTime() + 60 * 60 * 1000))
-                : null;
-              const isCurrent = start ? now >= start && now < (fallbackEnd ?? start) : false;
-              const isFocusNext = !isCurrent && focus.kind === "next" && focus.itemId === it.id;
-              const isFocusClosest = !isCurrent && focus.kind === "closest" && focus.itemId === it.id;
+              const isCurrent = currentItemId === it.id;
 
               return (
                 <li
@@ -364,16 +352,18 @@ export default function ProgramPage() {
                   ref={(el) => {
                     programRefs.current[it.id] = el;
                   }}
-                  className={`card p-4 ${isCurrent ? "program-current" : isFocusNext || isFocusClosest ? "program-next" : ""}`}
+                  className={`card p-4 ${isCurrent ? "program-current" : ""}`}
                 >
                   <div className="flex items-center justify-between text-sm text-[color:var(--muted-fg)]">
                     <div>{time}</div>
                     {isCurrent ? <span className="program-current-badge">{t("program.badge.now")}</span> : null}
-                    {isFocusNext ? <span className="program-next-badge">{t("program.badge.next")}</span> : null}
-                    {isFocusClosest ? <span className="program-next-badge">{t("program.badge.closest")}</span> : null}
                   </div>
                   <div className="mt-1 text-base font-semibold">{it.title}</div>
-                  {speakerName ? <div className="mt-0.5 text-sm text-[color:var(--muted-fg)]">{speakerName}</div> : null}
+                  {speakerName ? (
+                    <div className={`mt-0.5 text-sm ${isCurrent ? "program-current-speaker" : "text-[color:var(--muted-fg)]"}`}>
+                      {speakerName}
+                    </div>
+                  ) : null}
                   {it.location ? <div className="mt-0.5 text-sm text-[color:var(--muted-fg)]">{it.location}</div> : null}
                   {it.description ? <div className="mt-3 whitespace-pre-wrap text-sm">{it.description}</div> : null}
                 </li>
@@ -390,9 +380,7 @@ export default function ProgramPage() {
           ) : null}
           <ul className="space-y-2">
             {speakers.map((s) => {
-              const isFocused =
-                focus.speakerId === s.id &&
-                (focus.kind === "current" || focus.kind === "next" || focus.kind === "closest");
+              const isFocused = currentSpeakerId === s.id;
               return (
                 <li
                   key={s.id}
@@ -400,7 +388,7 @@ export default function ProgramPage() {
                   ref={(el) => {
                     speakerRefs.current[s.id] = el;
                   }}
-                  className={`card p-4 ${isFocused && focus.kind === "current" ? "program-current" : ""} ${isFocused && (focus.kind === "next" || focus.kind === "closest") ? "program-next" : ""}`}
+                  className={`card p-4 ${isFocused ? "program-current" : ""}`}
                 >
                   <details
                     open={expandedSpeakerId === s.id}
@@ -421,15 +409,7 @@ export default function ProgramPage() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
                           <div className="text-base font-semibold">{s.name}</div>
-                          {isFocused && focus.kind === "current" ? (
-                            <span className="program-current-badge">{t("program.badge.now")}</span>
-                          ) : null}
-                          {isFocused && focus.kind === "next" ? (
-                            <span className="program-next-badge">{t("program.badge.next")}</span>
-                          ) : null}
-                          {isFocused && focus.kind === "closest" ? (
-                            <span className="program-next-badge">{t("program.badge.closest")}</span>
-                          ) : null}
+                          {isFocused ? <span className="program-current-badge">{t("program.badge.now")}</span> : null}
                         </div>
                         {s.topic ? <div className="mt-0.5 text-sm text-[color:var(--muted-fg)]">{s.topic}</div> : null}
                       </div>

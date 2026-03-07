@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getProfileByUserId, getStats } from "@/lib/db";
+import { getProfileByUserId, getStats } from "@/lib/dbx";
 import { resolveRequestContext } from "@/lib/requestContext";
 
 export const runtime = "nodejs";

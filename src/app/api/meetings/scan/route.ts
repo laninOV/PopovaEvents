@@ -6,8 +6,9 @@ import {
   ensureEventBySlug,
   ensureEventParticipant,
   getMeetingDetail,
-  getOrCreateUserByTelegramId,
-} from "@/lib/db";
+  getOrCreateUserForEvent,
+  isEventNotConfiguredError,
+} from "@/lib/dbx";
 import { getAuthFromRequest } from "@/lib/telegramAuth";
 import { getDefaultEventSlug } from "@/lib/eventContext";
 import { parseAndVerifyQrPayload } from "@/lib/qr";
@@ -38,11 +39,28 @@ export async function POST(req: NextRequest) {
   if (!verified.ok) return NextResponse.json({ error: verified.error }, { status: 400 });
   if (verified.publicId.length < 8) return NextResponse.json({ error: "bad_code" }, { status: 400 });
 
-  const event =
-    verified.eventSlug === defaultSlug ? await ensureDefaultEvent() : await ensureEventBySlug(verified.eventSlug);
+  let event: Awaited<ReturnType<typeof ensureDefaultEvent>> | null;
+  try {
+    event =
+      verified.eventSlug === defaultSlug ? await ensureDefaultEvent() : await ensureEventBySlug(verified.eventSlug);
+  } catch (error) {
+    if (isEventNotConfiguredError(error)) {
+      return NextResponse.json({ error: "event_not_configured" }, { status: 404 });
+    }
+    throw error;
+  }
   if (!event) return NextResponse.json({ error: "event_not_found" }, { status: 404 });
-  const user = await getOrCreateUserByTelegramId(auth.telegramId, auth.telegramUser);
-  await ensureEventParticipant(event.id, user.id);
+
+  let user: Awaited<ReturnType<typeof getOrCreateUserForEvent>>;
+  try {
+    user = await getOrCreateUserForEvent(event.id, auth.telegramId, auth.telegramUser);
+    await ensureEventParticipant(event.id, user.id);
+  } catch (error) {
+    if (isEventNotConfiguredError(error)) {
+      return NextResponse.json({ error: "event_not_configured" }, { status: 404 });
+    }
+    throw error;
+  }
 
   const result = await createOrGetMeeting(event.id, user.id, verified.publicId);
   if (!result.ok) {

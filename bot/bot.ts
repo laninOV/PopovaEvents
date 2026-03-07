@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { Bot, InlineKeyboard, InputFile, Keyboard } from "grammy";
 import { fileURLToPath } from "node:url";
-import { upsertBotUser } from "../src/lib/db";
+import { upsertBotUser } from "../src/lib/dbx";
 
 const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
 const webAppUrl = process.env.WEBAPP_URL?.trim();

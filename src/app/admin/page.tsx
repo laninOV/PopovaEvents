@@ -43,6 +43,9 @@ export default function AdminPage() {
             <Link href="/admin/program" className="btn btn-ghost justify-start">
               Программа
             </Link>
+            <Link href="/admin/events" className="btn btn-ghost justify-start">
+              Ивенты и БД
+            </Link>
           </div>
           <div className="mt-3 text-xs text-zinc-500">Доступ: `ADMIN_TELEGRAM_IDS` (через запятую).</div>
         </section>

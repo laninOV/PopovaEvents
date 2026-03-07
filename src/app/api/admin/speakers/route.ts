@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { ensureEventParticipant, getOrCreateUserByTelegramId, listSpeakers, upsertSpeaker } from "@/lib/db";
-import { getEventForRequest } from "@/lib/getEventForRequest";
-import { getAuthFromRequest } from "@/lib/telegramAuth";
+import { listSpeakers, upsertSpeaker } from "@/lib/dbx";
 import { isAdminTelegramId } from "@/lib/admin";
+import { resolveRequestContext } from "@/lib/requestContext";
 
 export const runtime = "nodejs";
 
@@ -18,31 +17,22 @@ const SpeakerSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
-  const auth = getAuthFromRequest(req);
-  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: 401 });
-  if (!isAdminTelegramId(auth.telegramId)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
-
-  const event = await getEventForRequest(req);
-  if (!event) return NextResponse.json({ error: "event_not_found" }, { status: 404 });
-  const user = await getOrCreateUserByTelegramId(auth.telegramId, auth.telegramUser);
-  await ensureEventParticipant(event.id, user.id);
-
-  return NextResponse.json({ speakers: await listSpeakers(event.id) });
+  const resolved = await resolveRequestContext(req);
+  if (!resolved.ok) return resolved.response;
+  if (!isAdminTelegramId(resolved.ctx.auth.telegramId)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  return NextResponse.json({ speakers: await listSpeakers(resolved.ctx.event.id) });
 }
 
 export async function POST(req: NextRequest) {
-  const auth = getAuthFromRequest(req);
-  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: 401 });
-  if (!isAdminTelegramId(auth.telegramId)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  const resolved = await resolveRequestContext(req);
+  if (!resolved.ok) return resolved.response;
+  if (!isAdminTelegramId(resolved.ctx.auth.telegramId)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const json = await req.json().catch(() => null);
   const parsed = SpeakerSchema.safeParse(json);
   if (!parsed.success) return NextResponse.json({ error: "bad_request" }, { status: 400 });
 
-  const event = await getEventForRequest(req);
-  if (!event) return NextResponse.json({ error: "event_not_found" }, { status: 404 });
-  const user = await getOrCreateUserByTelegramId(auth.telegramId, auth.telegramUser);
-  await ensureEventParticipant(event.id, user.id);
+  const { event } = resolved.ctx;
 
   const id = await upsertSpeaker(event.id, {
     id: parsed.data.id,

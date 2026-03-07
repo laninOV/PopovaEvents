@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureEventParticipant, getOrCreateUserByTelegramId, listParticipants } from "@/lib/db";
-import { getEventForRequest } from "@/lib/getEventForRequest";
-import { getAuthFromRequest } from "@/lib/telegramAuth";
+import { listParticipants } from "@/lib/dbx";
+import { resolveRequestContext } from "@/lib/requestContext";
 
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
-  const auth = getAuthFromRequest(req);
-  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: 401 });
-
-  const event = await getEventForRequest(req);
-  if (!event) return NextResponse.json({ error: "event_not_found" }, { status: 404 });
-
-  const user = await getOrCreateUserByTelegramId(auth.telegramId, auth.telegramUser);
-  await ensureEventParticipant(event.id, user.id);
+  const resolved = await resolveRequestContext(req);
+  if (!resolved.ok) return resolved.response;
+  const { event } = resolved.ctx;
 
   const q = req.nextUrl.searchParams.get("q");
   const participants = await listParticipants(event.id, { q, limit: 300 });

@@ -51,6 +51,13 @@ npm run bot
 - Postgres (опционально): `DB_PROVIDER=postgres`, строка подключения берётся из `POSTGRES_URL` (для Vercel Postgres задаётся автоматически).
 - Фото сохраняются в Vercel Blob (`BLOB_READ_WRITE_TOKEN`).
 
+### Multi-DB (1 ивент = 1 БД)
+
+- Включение: `MULTI_DB_ROUTING=1`.
+- Control plane БД: `CONTROL_POSTGRES_URL` (если не задана, берётся `POSTGRES_URL`/`DATABASE_URL`).
+- Для tenant-ивентов приложение использует отдельные pooled connection strings (по `eventSlug`), которые настраиваются через админку `/admin/events`.
+- Если tenant-конфиг не задан для ивента в tenant-режиме, API вернёт `event_not_configured`.
+
 ## SQL-запросы к локальной БД
 
 - Выполнить произвольный SQL:
@@ -91,4 +98,4 @@ QR выдаётся с backend через `GET /api/qr` и содержит ст
 ## Админка
 
 - Включите доступ: `ADMIN_TELEGRAM_IDS="123,456"` (Telegram user id через запятую).
-- Откройте `/admin` внутри Mini App: настройки чата, спикеры, программа.
+- Откройте `/admin` внутри Mini App: настройки чата, спикеры, программа, ивенты/БД.
