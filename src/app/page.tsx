@@ -1,29 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { useEffect, useMemo } from "react";
 import { getTelegramUnsafeUser, tgReady } from "@/lib/tgWebApp";
 import { useAppSettings } from "@/components/AppSettingsProvider";
 import { AppToggles } from "@/components/AppToggles";
-import type { DbMeetingListItem } from "@/lib/db";
-
-type MeResponse = {
-  user: { publicId: string };
-  profile: { displayName: string } | null;
-  stats: { meetingsCount: number; ratedCount: number; avgRating: number | null; notesCount: number };
-  event: { slug: string; name: string };
-};
-
-type Profile = {
-  firstName: string;
-  lastName: string | null;
-  instagram: string | null;
-  niche: string | null;
-  about: string | null;
-  helpful: string | null;
-  photoUrl: string | null;
-};
+import { useBootstrap } from "@/components/BootstrapProvider";
 
 function normalizeInstagramLink(value: string) {
   const trimmed = value.trim();
@@ -34,43 +16,35 @@ function normalizeInstagramLink(value: string) {
 }
 
 export default function HomePage() {
-  const [me, setMe] = useState<MeResponse | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [meetings, setMeetings] = useState<DbMeetingListItem[]>([]);
-  const [meetingsLoading, setMeetingsLoading] = useState(true);
+  const { data: bootstrap, loading: bootstrapLoading, error } = useBootstrap();
   const { t } = useAppSettings();
 
   useEffect(() => {
     tgReady();
-    apiFetch<MeResponse>("/api/me")
-      .then(setMe)
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : "Ошибка загрузки"));
-    apiFetch<{ profile: Profile | null }>("/api/profile")
-      .then((r) => setProfile(r.profile))
-      .catch(() => setProfile(null));
   }, []);
 
-  useEffect(() => {
-    apiFetch<{ meetings: DbMeetingListItem[] }>("/api/meetings")
-      .then((r) => setMeetings(r.meetings))
-      .finally(() => setMeetingsLoading(false));
-  }, []);
+  const profile = bootstrap?.profile ?? null;
+  const meetings = bootstrap?.meetingsPreview ?? [];
+  const meetingsLoading = bootstrapLoading && !bootstrap;
 
   const tgUser = getTelegramUnsafeUser();
   const fallbackPhotoUrl = profile?.photoUrl ?? tgUser?.photo_url ?? null;
+
   const displayName = useMemo(() => {
     if (!profile) return null;
     return [profile.firstName, profile.lastName].filter(Boolean).join(" ");
   }, [profile]);
+
   const displayNameSafe = useMemo(() => {
     const value = displayName?.trim();
     return value || t("profile.notSet");
   }, [displayName, t]);
+
   const instagramHref = useMemo(
     () => (profile?.instagram ? normalizeInstagramLink(profile.instagram) : null),
     [profile],
   );
+
   const instagramText = useMemo(() => profile?.instagram?.trim() || t("profile.notSet"), [profile, t]);
 
   return (
@@ -83,7 +57,7 @@ export default function HomePage() {
       <section className="card profile-hero p-5">
         <div className="flex items-center justify-between gap-2">
           <div className="text-sm font-semibold tracking-[0.02em]">{t("home.profile.cardTitle")}</div>
-          <Link href="/profile" className="text-xs font-semibold text-accent underline underline-offset-2">
+          <Link href="/profile" prefetch={false} className="text-xs font-semibold text-accent underline underline-offset-2">
             {t("home.profile.openProfile")}
           </Link>
         </div>
@@ -124,10 +98,10 @@ export default function HomePage() {
           </div>
         )}
         <div className="profile-actions mt-4">
-          <Link href="/form" className="btn btn-ghost flex-1">
+          <Link href="/form" prefetch={false} className="btn btn-ghost flex-1">
             {profile ? t("home.editProfile") : t("home.fillProfile")}
           </Link>
-          <Link href="/chat" className="btn btn-primary flex-1">
+          <Link href="/chat" prefetch={false} className="btn btn-primary flex-1">
             {t("home.chat")}
           </Link>
         </div>
@@ -135,8 +109,8 @@ export default function HomePage() {
 
       <section className="card home-meetings-card p-4">
         <div className="flex items-center justify-between text-sm font-semibold">
-          <div>{t("home.meetings", { n: me?.stats?.meetingsCount ?? "—" })}</div>
-          <Link href="/meetings" className="text-xs font-semibold text-accent underline underline-offset-2">
+          <div>{t("home.meetings", { n: bootstrap?.stats?.meetingsCount ?? "—" })}</div>
+          <Link href="/meetings" prefetch={false} className="text-xs font-semibold text-accent underline underline-offset-2">
             {t("home.meetingsAll")}
           </Link>
         </div>
@@ -146,13 +120,13 @@ export default function HomePage() {
           <div className="mt-2 text-sm text-[color:var(--muted-fg)]">{t("home.meetingsEmpty")}</div>
         ) : (
           <ul className="mt-2 space-y-2">
-            {meetings.slice(0, 3).map((m) => (
+            {meetings.map((m) => (
               <li
                 key={m.id}
                 className="flex items-center justify-between rounded-xl border border-[color:var(--border)] bg-[color:var(--card)]/70 px-3 py-2 text-sm"
               >
                 <div className="truncate font-medium">{m.other.displayName ?? "Участник"}</div>
-                <Link href={`/meetings/${m.id}`} className="text-xs font-semibold text-accent underline underline-offset-2">
+                <Link href={`/meetings/${m.id}`} prefetch={false} className="text-xs font-semibold text-accent underline underline-offset-2">
                   {t("home.open")}
                 </Link>
               </li>
@@ -161,9 +135,7 @@ export default function HomePage() {
         )}
       </section>
 
-      {error ? (
-        <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-900">{error}</div>
-      ) : null}
+      {error ? <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-900">{error}</div> : null}
     </main>
   );
 }

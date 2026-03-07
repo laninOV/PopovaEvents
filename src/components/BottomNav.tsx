@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useCallback } from "react";
 import { useAppSettings } from "@/components/AppSettingsProvider";
-import { apiFetch } from "@/lib/api";
+import { useBootstrap } from "@/components/BootstrapProvider";
 
 const items = [
   {
@@ -56,24 +56,18 @@ const items = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const { t } = useAppSettings();
-  const [profileComplete, setProfileComplete] = useState<boolean | null>(null);
+  const { data } = useBootstrap();
 
-  useEffect(() => {
-    let active = true;
-    apiFetch<{ profile: unknown | null }>("/api/profile")
-      .then((r) => {
-        if (!active) return;
-        setProfileComplete(Boolean(r.profile));
-      })
-      .catch(() => {
-        if (!active) return;
-        setProfileComplete(null);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const prefetchOnIntent = useCallback(
+    (href: string) => {
+      router.prefetch(href);
+    },
+    [router],
+  );
+
+  const profileComplete = data ? Boolean(data.profile) : null;
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[calc(12px+env(safe-area-inset-bottom))] pt-2">
@@ -86,6 +80,8 @@ export function BottomNav() {
               <li key={item.href}>
                 <Link
                   href={item.href}
+                  prefetch={false}
+                  onMouseEnter={() => prefetchOnIntent(item.href)}
                   className={["nav-dock-item", active ? "nav-dock-item-active" : ""].join(" ")}
                   aria-current={active ? "page" : undefined}
                 >

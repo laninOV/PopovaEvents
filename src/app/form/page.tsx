@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { getTelegramUnsafeUser, tgReady } from "@/lib/tgWebApp";
 import { useAppSettings } from "@/components/AppSettingsProvider";
+import { useBootstrap } from "@/components/BootstrapProvider";
 
 type Profile = {
   firstName: string;
@@ -41,6 +42,7 @@ const STEP_KEYS = {
 export default function FormPage() {
   const router = useRouter();
   const { t } = useAppSettings();
+  const { data: bootstrap, loading: bootstrapLoading } = useBootstrap();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -60,20 +62,48 @@ export default function FormPage() {
 
   useEffect(() => {
     tgReady();
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const applyProfile = (profile: Profile | null) => {
+      if (!profile || !active) return;
+      setFirstName(profile.firstName ?? "");
+      setLastName(profile.lastName ?? "");
+      setInstagram(profile.instagram ?? "");
+      setNiche(profile.niche ?? "");
+      setAbout(profile.about ?? "");
+      setHelpful(profile.helpful ?? "");
+      setPhotoUrl(profile.photoUrl ?? null);
+    };
+
+    if (bootstrapLoading) return () => { active = false; };
+
+    if (bootstrap) {
+      applyProfile(bootstrap.profile);
+      setLoading(false);
+      return () => {
+        active = false;
+      };
+    }
+
     apiFetch<{ profile: Profile | null }>("/api/profile")
       .then((r) => {
-        if (!r.profile) return;
-        setFirstName(r.profile.firstName ?? "");
-        setLastName(r.profile.lastName ?? "");
-        setInstagram(r.profile.instagram ?? "");
-        setNiche(r.profile.niche ?? "");
-        setAbout(r.profile.about ?? "");
-        setHelpful(r.profile.helpful ?? "");
-        setPhotoUrl(r.profile.photoUrl ?? null);
+        applyProfile(r.profile);
       })
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : t("form.error.load")))
-      .finally(() => setLoading(false));
-  }, [t]);
+      .catch((e: unknown) => {
+        if (!active) return;
+        setError(e instanceof Error ? e.message : t("form.error.load"));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [bootstrap, bootstrapLoading, t]);
 
   useEffect(() => {
     if (!isSuccess) return;
@@ -84,6 +114,7 @@ export default function FormPage() {
   }, [isSuccess, router]);
 
   const canSave = useMemo(() => firstName.trim().length > 0 && !saving && !uploading, [firstName, saving, uploading]);
+  const canSwitchSteps = !saving && !uploading;
   const canGoNext = useMemo(() => {
     if (currentStep === 1) return canSave;
     return !saving && !uploading;
@@ -138,6 +169,12 @@ export default function FormPage() {
       if (prev === 2) return 3;
       return prev;
     });
+  }
+
+  function jumpToStep(step: WizardStep) {
+    if (!canSwitchSteps) return;
+    setError(null);
+    setCurrentStep(step);
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -230,15 +267,19 @@ export default function FormPage() {
           {STEP_ORDER.map((step) => {
             const state = step < currentStep ? "done" : step === currentStep ? "current" : "upcoming";
             return (
-              <li
-                key={step}
-                className={`form-wizard-step form-wizard-step-${state}`}
-                aria-current={step === currentStep ? "step" : undefined}
-              >
-                <span className="form-wizard-step-dot" aria-hidden>
-                  {step < currentStep ? "✓" : step}
-                </span>
-                <span className="form-wizard-step-label">{t(STEP_KEYS[step].short)}</span>
+              <li key={step} className={`form-wizard-step form-wizard-step-${state}`}>
+                <button
+                  type="button"
+                  className="form-wizard-step-trigger"
+                  onClick={() => jumpToStep(step)}
+                  disabled={!canSwitchSteps}
+                  aria-current={step === currentStep ? "step" : undefined}
+                >
+                  <span className="form-wizard-step-dot" aria-hidden>
+                    {step < currentStep ? "✓" : step}
+                  </span>
+                  <span className="form-wizard-step-label">{t(STEP_KEYS[step].short)}</span>
+                </button>
               </li>
             );
           })}

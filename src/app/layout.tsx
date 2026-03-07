@@ -7,6 +7,7 @@ import { EventBootstrap } from "@/components/EventBootstrap";
 import { TelegramGate } from "@/components/TelegramGate";
 import { ProfileGate } from "@/components/ProfileGate";
 import { AppSettingsProvider } from "@/components/AppSettingsProvider";
+import { BootstrapProvider } from "@/components/BootstrapProvider";
 import { PageContainer } from "@/components/PageContainer";
 
 const fontSans = Manrope({
@@ -99,12 +100,14 @@ export default function RootLayout({
         </Script>
         <AppSettingsProvider>
           <EventBootstrap />
-          <TelegramGate />
-          <ProfileGate />
-          <div className="mx-auto min-h-dvh max-w-3xl px-4 pb-20 pt-4 text-[color:var(--foreground)]">
-            <PageContainer>{children}</PageContainer>
-          </div>
-          <BottomNav />
+          <BootstrapProvider>
+            <TelegramGate />
+            <ProfileGate />
+            <div className="mx-auto min-h-dvh max-w-3xl px-4 pb-20 pt-4 text-[color:var(--foreground)]">
+              <PageContainer>{children}</PageContainer>
+            </div>
+            <BottomNav />
+          </BootstrapProvider>
         </AppSettingsProvider>
       </body>
     </html>

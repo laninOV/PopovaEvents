@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { tgReady } from "@/lib/tgWebApp";
-import QRCode from "qrcode";
 
 type QrResponse = { payload: string };
 
@@ -24,9 +23,24 @@ export default function QrPage() {
 
   useEffect(() => {
     if (!payload) return;
-    QRCode.toDataURL(payload, { margin: 1, width: 560, errorCorrectionLevel: "M" })
-      .then(setQrUrl)
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : "Ошибка генерации QR"));
+    let active = true;
+
+    void import("qrcode")
+      .then(({ default: QRCode }) =>
+        QRCode.toDataURL(payload, { margin: 1, width: 560, errorCorrectionLevel: "M" }),
+      )
+      .then((url) => {
+        if (!active) return;
+        setQrUrl(url);
+      })
+      .catch((e: unknown) => {
+        if (!active) return;
+        setError(e instanceof Error ? e.message : "Ошибка генерации QR");
+      });
+
+    return () => {
+      active = false;
+    };
   }, [payload]);
 
   return (
@@ -38,9 +52,7 @@ export default function QrPage() {
         </p>
       </header>
 
-      {error ? (
-        <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-900">{error}</div>
-      ) : null}
+      {error ? <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-900">{error}</div> : null}
 
       <section className="card p-4">
         <div className="flex items-center justify-center">
@@ -65,9 +77,7 @@ export default function QrPage() {
             {copied ? "Скопировано" : "Скопировать код"}
           </button>
         </div>
-        <div className="mt-3 text-center text-xs text-zinc-500">
-          {payload ? `${payload.slice(0, 12)}…${payload.slice(-8)}` : "—"}
-        </div>
+        <div className="mt-3 text-center text-xs text-zinc-500">{payload ? `${payload.slice(0, 12)}…${payload.slice(-8)}` : "—"}</div>
       </section>
     </main>
   );

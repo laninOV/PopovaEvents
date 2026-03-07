@@ -3,11 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BrowserQRCodeReader, IScannerControls } from "@zxing/browser";
 import { apiFetch } from "@/lib/api";
 import { tgReady } from "@/lib/tgWebApp";
 import { useAppSettings } from "@/components/AppSettingsProvider";
 import { AppToggles } from "@/components/AppToggles";
+
+type ScannerControls = { stop: () => void };
+
+type BarcodeDetectorLike = {
+  detect: (source: ImageBitmapSource) => Promise<Array<{ rawValue?: string }>>;
+};
+
+type BarcodeDetectorCtor = new (options?: { formats?: string[] }) => BarcodeDetectorLike;
 
 function getErrorName(err: unknown) {
   if (!err || typeof err !== "object") return null;
@@ -19,7 +26,7 @@ function getErrorName(err: unknown) {
 export default function ScanPage() {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const controlsRef = useRef<IScannerControls | null>(null);
+  const controlsRef = useRef<ScannerControls | null>(null);
   const qrTabId = "scan-qr-tab";
   const scanTabId = "scan-current-tab";
   const scanPanelId = "scan-panel";
@@ -44,7 +51,8 @@ export default function ScanPage() {
     } catch (e: unknown) {
       const raw = e instanceof Error ? e.message : "Ошибка";
       if (raw.includes("self_scan")) setError("Нельзя сканировать свой QR.");
-      else if (raw.includes("not_found")) setError("Профиль не найден. Попросите человека открыть приложение и зарегистрироваться.");
+      else if (raw.includes("not_found"))
+        setError("Профиль не найден. Попросите человека открыть приложение и зарегистрироваться.");
       else if (raw.includes("bad_code") || raw.includes("bad_signature") || raw.includes("expired"))
         setError("Неверный или просроченный QR-код.");
       else setError(raw);
@@ -54,29 +62,117 @@ export default function ScanPage() {
 
   useEffect(() => {
     tgReady();
+
     const video = videoRef.current;
     if (!video) return;
 
-    const reader = new BrowserQRCodeReader();
     let canceled = false;
+    let stopScanner: (() => void) | null = null;
 
-    reader
-      .decodeFromVideoDevice(undefined, video, (result, err, controls) => {
-        if (canceled) return;
-        controlsRef.current = controls;
-        if (result?.getText()) {
-          controls.stop();
-          handleCode(result.getText());
-        } else if (err && getErrorName(err) !== "NotFoundException") {
-          // NotFoundException is spammy while scanning, ignore it.
-          setError("Не удалось распознать QR. Попробуйте ещё раз.");
+    const stopAll = () => {
+      stopScanner?.();
+      stopScanner = null;
+      controlsRef.current?.stop();
+      controlsRef.current = null;
+    };
+
+    const startWithBarcodeDetector = async () => {
+      const detectorCtor = (window as Window & { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector;
+      if (!detectorCtor) return false;
+      if (!navigator.mediaDevices?.getUserMedia) return false;
+
+      try {
+        const detector = new detectorCtor({ formats: ["qr_code"] });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: "environment" },
+          },
+        });
+
+        if (canceled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return true;
         }
-      })
-      .catch(() => setError("Нет доступа к камере. Разрешите камеру или введите код вручную."));
+
+        video.srcObject = stream;
+        await video.play();
+
+        let rafId = 0;
+
+        const scanLoop = async () => {
+          if (canceled) return;
+
+          try {
+            const detected = await detector.detect(video as unknown as ImageBitmapSource);
+            const code = detected.find((item) => typeof item.rawValue === "string" && item.rawValue.trim())?.rawValue?.trim();
+            if (code) {
+              stopAll();
+              void handleCode(code);
+              return;
+            }
+          } catch {
+            // ignore frame-level errors and keep scanning
+          }
+
+          rafId = window.requestAnimationFrame(() => {
+            void scanLoop();
+          });
+        };
+
+        rafId = window.requestAnimationFrame(() => {
+          void scanLoop();
+        });
+
+        stopScanner = () => {
+          window.cancelAnimationFrame(rafId);
+          stream.getTracks().forEach((track) => track.stop());
+          if (video.srcObject === stream) video.srcObject = null;
+        };
+
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    const startWithZxingFallback = async () => {
+      const zxing = await import("@zxing/browser");
+      if (canceled) return;
+
+      const reader = new zxing.BrowserQRCodeReader();
+      reader
+        .decodeFromVideoDevice(undefined, video, (result, err, controls) => {
+          if (canceled) return;
+
+          controlsRef.current = controls;
+          if (result?.getText()) {
+            controls.stop();
+            void handleCode(result.getText());
+            return;
+          }
+
+          if (err && getErrorName(err) !== "NotFoundException") {
+            // NotFoundException is spammy while scanning, ignore it.
+            setError("Не удалось распознать QR. Попробуйте ещё раз.");
+          }
+        })
+        .catch(() => setError("Нет доступа к камере. Разрешите камеру или введите код вручную."));
+
+      stopScanner = () => {
+        controlsRef.current?.stop();
+        controlsRef.current = null;
+      };
+    };
+
+    void (async () => {
+      const started = await startWithBarcodeDetector();
+      if (started || canceled) return;
+      await startWithZxingFallback();
+    })();
 
     return () => {
       canceled = true;
-      controlsRef.current?.stop();
+      stopAll();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -97,6 +193,7 @@ export default function ScanPage() {
         <div className="segmented-track grid-cols-2">
           <Link
             href="/qr"
+            prefetch={false}
             id={qrTabId}
             role="tab"
             aria-selected={false}
@@ -121,9 +218,7 @@ export default function ScanPage() {
       </section>
 
       <div id={scanPanelId} role="tabpanel" aria-labelledby={scanTabId} className="space-y-4">
-        {error ? (
-          <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-900">{error}</div>
-        ) : null}
+        {error ? <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-900">{error}</div> : null}
 
         <section className="overflow-hidden rounded-2xl border border-[color:var(--border)] bg-black">
           <video ref={videoRef} className="h-80 w-full object-cover" muted playsInline />

@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import {
-  ensureEventParticipant,
-  getOrCreateUserByTelegramId,
-  getProfileByUserId,
-  setBotUserRegistered,
-  upsertProfile,
-} from "@/lib/db";
-import { getAuthFromRequest } from "@/lib/telegramAuth";
-import { getEventForRequest } from "@/lib/getEventForRequest";
+import { getProfileByUserId, setBotUserRegistered, upsertProfile } from "@/lib/db";
+import { resolveRequestContext } from "@/lib/requestContext";
 
 export const runtime = "nodejs";
 
@@ -31,30 +24,22 @@ const ProfileSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
-  const auth = getAuthFromRequest(req);
-  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: 401 });
+  const resolved = await resolveRequestContext(req);
+  if (!resolved.ok) return resolved.response;
 
-  const event = await getEventForRequest(req);
-  if (!event) return NextResponse.json({ error: "event_not_found" }, { status: 404 });
-  const user = await getOrCreateUserByTelegramId(auth.telegramId, auth.telegramUser);
-  await ensureEventParticipant(event.id, user.id);
-
-  const profile = await getProfileByUserId(user.id);
+  const profile = await getProfileByUserId(resolved.ctx.user.id);
   return NextResponse.json({ profile });
 }
 
 export async function PUT(req: NextRequest) {
-  const auth = getAuthFromRequest(req);
-  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: 401 });
+  const resolved = await resolveRequestContext(req);
+  if (!resolved.ok) return resolved.response;
 
   const json = await req.json().catch(() => null);
   const parsed = ProfileSchema.safeParse(json);
   if (!parsed.success) return NextResponse.json({ error: "bad_request" }, { status: 400 });
 
-  const event = await getEventForRequest(req);
-  if (!event) return NextResponse.json({ error: "event_not_found" }, { status: 404 });
-  const user = await getOrCreateUserByTelegramId(auth.telegramId, auth.telegramUser);
-  await ensureEventParticipant(event.id, user.id);
+  const { auth, user } = resolved.ctx;
 
   const telegramPhotoUrl =
     auth.telegramUser &&
@@ -75,6 +60,7 @@ export async function PUT(req: NextRequest) {
     helpful: parsed.data.helpful ?? null,
     photoUrl: effectivePhotoUrl,
   });
+
   await setBotUserRegistered(auth.telegramId);
   return NextResponse.json({ ok: true, profile });
 }

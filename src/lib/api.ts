@@ -1,6 +1,11 @@
 import { getTelegramInitData } from "@/lib/tgWebApp";
 
-function isDevHost() {
+function dispatchClientEvent(name: string) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(name));
+}
+
+export function isDevHost() {
   if (typeof window === "undefined") return false;
   const host = window.location.hostname;
   return host === "localhost" || host === "127.0.0.1";
@@ -27,39 +32,66 @@ function getInitUserKey(initData: string) {
   }
 }
 
+export function getClientUserScopeKey() {
+  const initData = getTelegramInitData();
+  if (initData) return `tg:${getInitUserKey(initData)}`;
+
+  if (typeof window === "undefined") return "server";
+  if (!isDevHost()) return "anon";
+
+  try {
+    const devId = window.localStorage.getItem("devTelegramId") ?? "123456789";
+    return `dev:${devId.trim() || "123456789"}`;
+  } catch {
+    return "dev:123456789";
+  }
+}
+
+export function getClientEventSlug() {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.localStorage.getItem("eventSlug")?.trim() ?? "";
+  } catch {
+    return "";
+  }
+}
+
+export function clearApiGetCache() {
+  getCache.clear();
+}
+
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const method = (init?.method ?? "GET").toUpperCase();
   const hasBody = Boolean(init?.body);
   const isGet = method === "GET" && !hasBody;
 
   const headers = new Headers(init?.headers);
-  const hasFormDataBody =
-    typeof FormData !== "undefined" && init?.body && init.body instanceof FormData;
+  const hasFormDataBody = typeof FormData !== "undefined" && init?.body && init.body instanceof FormData;
   if (!hasFormDataBody) {
     headers.set("content-type", headers.get("content-type") ?? "application/json");
   }
 
   const initData = getTelegramInitData();
-  const userKey = initData ? getInitUserKey(initData) : "no-init";
+  const userKey = getClientUserScopeKey();
   if (initData) {
     headers.set("x-telegram-init-data", initData);
     try {
       localStorage.removeItem("devTelegramId");
+      dispatchClientEvent("pe:auth-change");
     } catch {
       // ignore
     }
-  } else {
-    if (isDevHost()) {
-      headers.set("x-dev-telegram-id", localStorage.getItem("devTelegramId") ?? "123456789");
-    }
+  } else if (isDevHost()) {
+    headers.set("x-dev-telegram-id", localStorage.getItem("devTelegramId") ?? "123456789");
   }
 
-  const eventSlug = localStorage.getItem("eventSlug")?.trim() ?? "";
+  const eventSlug = getClientEventSlug();
   if (eventSlug) headers.set("x-event-slug", eventSlug);
 
   if (!isGet) {
     // Avoid stale data after mutations.
-    getCache.clear();
+    clearApiGetCache();
+    dispatchClientEvent("pe:api-mutation");
   } else {
     const cacheKey = `${path}|event:${eventSlug || "default"}|user:${userKey}`;
     const existing = getCache.get(cacheKey);
@@ -77,11 +109,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     })();
 
     getCache.set(cacheKey, { ts: Date.now(), promise });
-    try {
-      return (await promise) as T;
-    } finally {
-      // Keep the entry for TTL, but let promise settle.
-    }
+    return (await promise) as T;
   }
 
   const res = await fetch(path, { ...init, method, headers });

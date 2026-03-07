@@ -29,10 +29,12 @@ export default function EventPage() {
     const value = slug.trim();
     if (!value) {
       localStorage.removeItem("eventSlug");
+      window.dispatchEvent(new Event("pe:event-slug-change"));
       router.push("/");
       return;
     }
     localStorage.setItem("eventSlug", value);
+    window.dispatchEvent(new Event("pe:event-slug-change"));
     try {
       await apiFetch("/api/me");
       router.push("/");

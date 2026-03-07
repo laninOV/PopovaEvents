@@ -1,26 +1,55 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getTelegramWebApp } from "@/lib/tgWebApp";
 import { useAppSettings } from "@/components/AppSettingsProvider";
 
+type Diagnostics = {
+  isDevHost: boolean;
+  hasTelegramObject: boolean;
+  hasWebAppObject: boolean;
+  initDataLength: number;
+  href: string;
+};
+
+const EMPTY_DIAGNOSTICS: Diagnostics = {
+  isDevHost: false,
+  hasTelegramObject: false,
+  hasWebAppObject: false,
+  initDataLength: 0,
+  href: "",
+};
+
 export function TelegramGate() {
   const { t } = useAppSettings();
-  const isDevHost =
-    typeof window !== "undefined" &&
-    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
-  const hasTelegramObject = typeof window !== "undefined" && Boolean(window.Telegram);
-  const hasWebAppObject = typeof window !== "undefined" && Boolean(window.Telegram?.WebApp);
-  const initialDevId =
-    typeof window !== "undefined" ? localStorage.getItem("devTelegramId")?.trim() ?? "" : "";
-  const initData = typeof window !== "undefined" ? (getTelegramWebApp()?.initData ?? "") : "";
-  const initialAllowed =
-    typeof window !== "undefined" ? Boolean(initData || (isDevHost && initialDevId)) : true;
+  const [ready, setReady] = useState(false);
+  const [allowed, setAllowed] = useState(true);
+  const [devId, setDevId] = useState("");
+  const [diagnostics, setDiagnostics] = useState<Diagnostics>(EMPTY_DIAGNOSTICS);
 
-  const [allowed] = useState(initialAllowed);
-  const [devId, setDevId] = useState(initialDevId);
+  useEffect(() => {
+    const isDevHost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const hasTelegramObject = Boolean(window.Telegram);
+    const hasWebAppObject = Boolean(window.Telegram?.WebApp);
+    const initData = getTelegramWebApp()?.initData ?? "";
+    const initialDevId = localStorage.getItem("devTelegramId")?.trim() ?? "";
 
-  if (allowed) return null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only gate initialization
+    setDevId(initialDevId);
+    setAllowed(Boolean(initData || (isDevHost && initialDevId)));
+    setDiagnostics({
+      isDevHost,
+      hasTelegramObject,
+      hasWebAppObject,
+      initDataLength: initData.length,
+      href: window.location.href,
+    });
+    setReady(true);
+  }, []);
+
+  const showGate = useMemo(() => ready && !allowed, [allowed, ready]);
+
+  if (!showGate) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[color:var(--background)] px-4">
@@ -32,16 +61,16 @@ export function TelegramGate() {
           <summary className="cursor-pointer select-none font-semibold">Диагностика</summary>
           <div className="mt-2 grid gap-1">
             <div>
-              <span className="font-semibold">window.Telegram:</span> {String(hasTelegramObject)}
+              <span className="font-semibold">window.Telegram:</span> {String(diagnostics.hasTelegramObject)}
             </div>
             <div>
-              <span className="font-semibold">window.Telegram.WebApp:</span> {String(hasWebAppObject)}
+              <span className="font-semibold">window.Telegram.WebApp:</span> {String(diagnostics.hasWebAppObject)}
             </div>
             <div>
-              <span className="font-semibold">initData length:</span> {String(initData.length)}
+              <span className="font-semibold">initData length:</span> {String(diagnostics.initDataLength)}
             </div>
             <div>
-              <span className="font-semibold">url:</span> {typeof window !== "undefined" ? window.location.href : ""}
+              <span className="font-semibold">url:</span> {diagnostics.href}
             </div>
           </div>
           <div className="mt-2">
@@ -51,32 +80,33 @@ export function TelegramGate() {
           </div>
         </details>
 
-        {isDevHost ? (
+        {diagnostics.isDevHost ? (
           <div className="mt-4 border-t border-zinc-200 pt-4">
-          <div className="text-sm font-semibold">{t("gate.dev.title")}</div>
-          <p className="mt-1 text-sm text-[color:var(--muted-fg)]">{t("gate.dev.body")}</p>
-          <div className="mt-2 flex gap-2">
-            <input
-              value={devId}
-              onChange={(e) => setDevId(e.target.value)}
-              className="input flex-1"
-              placeholder="например: 123456789"
-              inputMode="numeric"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                const v = devId.trim();
-                if (!v) return;
-                localStorage.setItem("devTelegramId", v);
-                window.location.reload();
-              }}
-              className="btn btn-primary px-3"
-            >
-              OK
-            </button>
-          </div>
-          <div className="mt-2 text-xs text-[color:var(--muted-fg)]">{t("gate.dev.hint")}</div>
+            <div className="text-sm font-semibold">{t("gate.dev.title")}</div>
+            <p className="mt-1 text-sm text-[color:var(--muted-fg)]">{t("gate.dev.body")}</p>
+            <div className="mt-2 flex gap-2">
+              <input
+                value={devId}
+                onChange={(e) => setDevId(e.target.value)}
+                className="input flex-1"
+                placeholder="например: 123456789"
+                inputMode="numeric"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const value = devId.trim();
+                  if (!value) return;
+                  localStorage.setItem("devTelegramId", value);
+                  window.dispatchEvent(new Event("pe:auth-change"));
+                  window.location.reload();
+                }}
+                className="btn btn-primary px-3"
+              >
+                OK
+              </button>
+            </div>
+            <div className="mt-2 text-xs text-[color:var(--muted-fg)]">{t("gate.dev.hint")}</div>
           </div>
         ) : null}
       </div>

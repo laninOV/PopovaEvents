@@ -283,6 +283,11 @@ h3 {
 }
 
 .form-wizard-step {
+  border-radius: 12px;
+}
+
+.form-wizard-step-trigger {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -290,6 +295,16 @@ h3 {
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--card) 86%, transparent);
   padding: 8px;
+  text-align: left;
+}
+
+.form-wizard-step-trigger:disabled {
+  opacity: 0.65;
+}
+
+.form-wizard-step-trigger:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 70%, transparent);
+  outline-offset: 2px;
 }
 
 .form-wizard-step-dot {
@@ -318,6 +333,10 @@ h3 {
   border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
 }
 
+.form-wizard-step-done .form-wizard-step-trigger {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+}
+
 .form-wizard-step-done .form-wizard-step-dot {
   border-color: color-mix(in srgb, var(--accent) 50%, transparent);
   background: color-mix(in srgb, var(--accent) 82%, transparent);
@@ -325,6 +344,10 @@ h3 {
 }
 
 .form-wizard-step-current {
+  border-color: color-mix(in srgb, var(--primary) 45%, transparent);
+}
+
+.form-wizard-step-current .form-wizard-step-trigger {
   border-color: color-mix(in srgb, var(--primary) 45%, transparent);
   background: color-mix(in srgb, var(--primary) 8%, var(--card));
 }

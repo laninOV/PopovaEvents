@@ -18,38 +18,58 @@ type Ctx = {
 
 const AppSettingsContext = createContext<Ctx | null>(null);
 
-function getInitialLang(): Lang {
-  if (typeof window === "undefined") return "ru";
+function resolveInitialLang(): Lang {
   const docLang = document.documentElement.lang?.trim();
   if (docLang === "en" || docLang === "ru") return docLang;
+
   const stored = localStorage.getItem("lang")?.trim();
   if (stored === "en" || stored === "ru") return stored;
+
   return "ru";
 }
 
-function getInitialTheme(): Theme {
-  if (typeof window === "undefined") return "dark";
+function resolveInitialTheme(): Theme {
   const docTheme = document.documentElement.dataset.theme?.trim();
   if (docTheme === "dark" || docTheme === "light") return docTheme;
+
   const stored = localStorage.getItem("theme")?.trim();
   if (stored === "dark" || stored === "light") return stored;
+
   const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? false;
   return prefersDark ? "dark" : "light";
 }
 
 export function AppSettingsProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(getInitialLang);
-  const [theme, setThemeState] = useState<Theme>(getInitialTheme);
+  // Keep deterministic defaults for server/client first render, then hydrate from browser sources.
+  const [lang, setLangState] = useState<Lang>("ru");
+  const [theme, setThemeState] = useState<Theme>("dark");
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    const nextLang = resolveInitialLang();
+    const nextTheme = resolveInitialTheme();
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time hydration-safe sync from DOM/localStorage
+    setLangState(nextLang);
+    setThemeState(nextTheme);
+
+    document.documentElement.lang = nextLang;
+    document.documentElement.dataset.theme = nextTheme;
+
+    setReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!ready) return;
     localStorage.setItem("lang", lang);
     document.documentElement.lang = lang;
-  }, [lang]);
+  }, [lang, ready]);
 
   useEffect(() => {
+    if (!ready) return;
     localStorage.setItem("theme", theme);
     document.documentElement.dataset.theme = theme;
-  }, [theme]);
+  }, [theme, ready]);
 
   const value = useMemo<Ctx>(() => {
     return {

@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { apiFetch } from "@/lib/api";
-import { tgReady } from "@/lib/tgWebApp";
 import { useAppSettings } from "@/components/AppSettingsProvider";
+import { useBootstrap } from "@/components/BootstrapProvider";
 
 const ALLOWLIST_PREFIXES = ["/api", "/form", "/admin"];
 
@@ -12,41 +11,19 @@ export function ProfileGate() {
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useAppSettings();
-  const [checked, setChecked] = useState(false);
-  const profileExistsRef = useRef<boolean | null>(null);
+  const { data, loading } = useBootstrap();
 
   const allowlisted = ALLOWLIST_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const waitingForBootstrap = !allowlisted && loading && !data;
 
   useEffect(() => {
-    const defer = (fn: () => void) => {
-      if (typeof queueMicrotask === "function") queueMicrotask(fn);
-      else setTimeout(fn, 0);
-    };
+    if (allowlisted) return;
+    if (loading) return;
+    if (!data) return;
+    if (!data.profile) router.replace("/form");
+  }, [allowlisted, data, loading, router]);
 
-    if (allowlisted) {
-      defer(() => setChecked(true));
-      return;
-    }
-    if (profileExistsRef.current === true) {
-      defer(() => setChecked(true));
-      return;
-    }
-
-    defer(() => setChecked(false));
-    tgReady();
-    apiFetch<{ profile: unknown | null }>("/api/profile")
-      .then((r) => {
-        const exists = Boolean(r.profile);
-        profileExistsRef.current = exists;
-        setChecked(true);
-        if (!exists) router.replace("/form");
-      })
-      .catch(() => {
-        setChecked(true);
-      });
-  }, [allowlisted, router]);
-
-  if (allowlisted || checked) return null;
+  if (!waitingForBootstrap) return null;
 
   return (
     <div className="fixed inset-0 z-40 bg-[color:var(--background)]" aria-hidden>
