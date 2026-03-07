@@ -43,7 +43,7 @@ npm run dev
 npm run bot
 ```
 
-Переменные: `TELEGRAM_BOT_TOKEN`, `WEBAPP_URL` (для Telegram должен быть `https://...`), `DEFAULT_EVENT_SLUG`, опционально `WELCOME_TEXT`, `CONTACT_TEXT`.
+Переменные: `TELEGRAM_BOT_TOKEN`, `WEBAPP_URL` (для Telegram должен быть `https://...`), `DEFAULT_EVENT_SLUG`, `DEFAULT_EVENT_TIMEZONE` (например, `Europe/Moscow`), опционально `WELCOME_TEXT`, `CONTACT_TEXT`.
 
 ## Хранилище
 
@@ -78,7 +78,7 @@ npm run db:query -- "SELECT u.telegram_id, p.first_name, p.instagram, p.updated_
 - Можно передать `?event=<slug>` в URL — он сохранится в localStorage автоматически.
 - По умолчанию используется `DEFAULT_EVENT_SLUG`.
 - Для авто‑создания неизвестных ивентов включите `ALLOW_PUBLIC_EVENT_CREATE=1` (иначе будет `event_not_found`).
-- Для демо-наполнения программы и спикеров включите `SEED_DEMO=1` (заполняется один раз, если программа пустая).
+- Для демо-наполнения программы и спикеров включите `SEED_DEMO=1` (заполняется один раз, если программа пустая). В production держите `SEED_DEMO=0`.
 
 ## Меню
 
@@ -99,3 +99,4 @@ QR выдаётся с backend через `GET /api/qr` и содержит ст
 
 - Включите доступ: `ADMIN_TELEGRAM_IDS="123,456"` (Telegram user id через запятую).
 - Откройте `/admin` внутри Mini App: настройки чата, спикеры, программа, ивенты/БД.
+- В `/admin/program` доступна кнопка полного сброса текущей программы и спикеров (reset для текущего event).

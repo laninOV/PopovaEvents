@@ -1259,6 +1259,12 @@ export async function deleteScheduleItem(eventId: string, itemId: string) {
   await sql`DELETE FROM schedule_items WHERE id = ${itemId} AND event_id = ${eventId}`;
 }
 
+export async function resetProgramData(eventId: string) {
+  await ensureDb();
+  await sql`DELETE FROM schedule_items WHERE event_id = ${eventId}`;
+  await sql`DELETE FROM speakers WHERE event_id = ${eventId}`;
+}
+
 export async function getChatLink() {
   await ensureDb();
   const result = await sql`SELECT chat_link FROM settings WHERE id = 'singleton'`;

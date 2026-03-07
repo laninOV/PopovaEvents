@@ -31,6 +31,7 @@ type ProgramResponse = {
   schedule: ScheduleItem[];
   speakers: Speaker[];
   serverNow?: string;
+  eventTimeZone?: string;
 };
 
 type ParsedScheduleItem = {
@@ -107,6 +108,17 @@ function normalizeLink(value: string) {
   return `https://${trimmed}`;
 }
 
+function resolveSafeTimeZone(raw: string | null | undefined) {
+  const value = (raw ?? "").trim();
+  if (!value) return "Europe/Moscow";
+  try {
+    new Intl.DateTimeFormat("ru-RU", { timeZone: value });
+    return value;
+  } catch {
+    return "Europe/Moscow";
+  }
+}
+
 export default function ProgramPage() {
   const [tab, setTab] = useState<"program" | "speakers">("program");
   const [items, setItems] = useState<ScheduleItem[]>([]);
@@ -115,6 +127,7 @@ export default function ProgramPage() {
   const [error, setError] = useState<string | null>(null);
   const timeCorrectionMsRef = useRef<number>(0);
   const [now, setNow] = useState<Date>(() => new Date());
+  const [eventTimeZone, setEventTimeZone] = useState<string>("Europe/Moscow");
   const { t } = useAppSettings();
   const programRefs = useRef<Record<string, HTMLLIElement | null>>({});
   const lastProgramScrollIdRef = useRef<string | null>(null);
@@ -139,6 +152,7 @@ export default function ProgramPage() {
         if (!active) return;
         setItems(r.schedule);
         setSpeakers(r.speakers);
+        setEventTimeZone(resolveSafeTimeZone(r.eventTimeZone));
         const serverNow = parseScheduleDateTime(r.serverNow ?? null);
         timeCorrectionMsRef.current = serverNow ? serverNow.getTime() - Date.now() : 0;
         setNow(new Date(Date.now() + timeCorrectionMsRef.current));
@@ -164,6 +178,16 @@ export default function ProgramPage() {
   }, []);
 
   const speakersById = useMemo(() => new Map(speakers.map((s) => [s.id, s.name])), [speakers]);
+  const timeFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat("ru-RU", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZone: eventTimeZone,
+      }),
+    [eventTimeZone],
+  );
   const parsedTimeline = useMemo<ParsedScheduleItem[]>(() => {
     const parsed = items
       .map((item) => {
@@ -281,6 +305,7 @@ export default function ProgramPage() {
             <div>tz: {Intl.DateTimeFormat().resolvedOptions().timeZone}</div>
             <div>offset(min): {-new Date().getTimezoneOffset()}</div>
             <div>correctionMs: {timeCorrectionMsRef.current}</div>
+            <div>eventTimeZone: {eventTimeZone}</div>
             <div>currentItemId: {currentItemId ?? "—"}</div>
             <div>currentSpeakerId: {currentSpeakerId ?? "—"}</div>
             <div>items: {items.length}</div>
@@ -338,9 +363,7 @@ export default function ProgramPage() {
               const start = parsed?.start ?? parseScheduleDateTime(it.startsAt);
               const end = parsed?.end ?? parseScheduleDateTime(it.endsAt);
               const time = start
-                ? `${start.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}${
-                    end ? `–${end.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}` : ""
-                  }`
+                ? `${timeFormatter.format(start)}${end ? `–${timeFormatter.format(end)}` : ""}`
                 : it.startsAt;
               const speakerName = it.speakerId ? speakersById.get(it.speakerId) : null;
               const isCurrent = currentItemId === it.id;

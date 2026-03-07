@@ -886,6 +886,18 @@ export async function deleteTenantScheduleItem(connectionString: string, eventId
   `;
 }
 
+export async function resetTenantProgramData(connectionString: string, eventId: string) {
+  await ensureTenantSchema(connectionString);
+  await tenantQuery(connectionString)`
+    DELETE FROM schedule_items
+    WHERE event_id = ${eventId}
+  `;
+  await tenantQuery(connectionString)`
+    DELETE FROM speakers
+    WHERE event_id = ${eventId}
+  `;
+}
+
 export async function getTenantChatLink(connectionString: string) {
   await ensureTenantSchema(connectionString);
   const result = await tenantQuery<{ chat_link: string | null }>(connectionString)`

@@ -36,6 +36,7 @@ export default function AdminProgramPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   const [startsAt, setStartsAt] = useState("");
   const [endsAt, setEndsAt] = useState("");
@@ -107,6 +108,25 @@ export default function AdminProgramPage() {
     await reload();
   }
 
+  async function resetProgramData() {
+    const confirmation = typeof window !== "undefined" ? window.prompt("Введите RESET для очистки программы и спикеров") : null;
+    if (confirmation !== "RESET") return;
+
+    setResetting(true);
+    setError(null);
+    try {
+      await apiFetch("/api/admin/program/reset", {
+        method: "POST",
+        body: JSON.stringify({ confirm: "RESET_PROGRAM_DATA" }),
+      });
+      await reload();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Ошибка очистки");
+    } finally {
+      setResetting(false);
+    }
+  }
+
   return (
     <main className="space-y-4">
       <header className="flex items-center justify-between">
@@ -117,6 +137,19 @@ export default function AdminProgramPage() {
       </header>
 
       {error ? <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-900">{error}</div> : null}
+
+      <section className="card border-red-200 bg-red-50 p-4">
+        <div className="text-sm font-semibold text-red-900">Опасная операция</div>
+        <div className="mt-1 text-sm text-red-800">Удаляет все пункты программы и всех спикеров текущего ивента.</div>
+        <button
+          type="button"
+          onClick={resetProgramData}
+          disabled={resetting}
+          className="btn mt-3 h-10 px-3 bg-red-700 text-white hover:bg-red-800 disabled:opacity-60"
+        >
+          {resetting ? "Очистка…" : "Reset program + speakers"}
+        </button>
+      </section>
 
       <section className="card p-4">
         <div className="text-sm font-semibold">Добавить пункт</div>

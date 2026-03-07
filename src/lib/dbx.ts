@@ -36,6 +36,7 @@ import {
   listTenantParticipants,
   listTenantSchedule,
   listTenantSpeakers,
+  resetTenantProgramData,
   seedTenantDemoIfEmpty,
   setTenantChatLink,
   upsertTenantProfileMirror,
@@ -495,6 +496,12 @@ export async function deleteScheduleItem(eventId: string, itemId: string) {
   const routing = await resolveEventStoreByEventId(eventId);
   if (routing.mode === "legacy") return legacy.deleteScheduleItem(eventId, itemId);
   return deleteTenantScheduleItem(routing.tenantConnectionString, eventId, itemId);
+}
+
+export async function resetProgramDataForEvent(eventId: string) {
+  const routing = await resolveEventStoreByEventId(eventId);
+  if (routing.mode === "legacy") return legacy.resetProgramData(eventId);
+  return resetTenantProgramData(routing.tenantConnectionString, eventId);
 }
 
 export async function getChatLink() {
