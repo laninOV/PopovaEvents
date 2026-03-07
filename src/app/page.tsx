@@ -50,13 +50,13 @@ export default function HomePage() {
   return (
     <main className="space-y-5">
       <header className="flex items-center justify-between">
-        <h1 className="text-[1.9rem] leading-tight">{t("nav.home")}</h1>
+        <h1 className="text-[1.9rem] leading-tight">{t("home.myProfile")}</h1>
         <AppToggles />
       </header>
 
       <section className="card profile-hero p-5">
         <div className="flex items-center justify-between gap-2">
-          <div className="text-sm font-semibold tracking-[0.02em]">{t("home.profile.cardTitle")}</div>
+          <div className="text-sm font-semibold tracking-[0.02em]">{t("home.myProfile")}</div>
           <Link href="/profile" prefetch={false} className="text-xs font-semibold text-accent underline underline-offset-2">
             {t("home.profile.openProfile")}
           </Link>

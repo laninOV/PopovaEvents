@@ -1,7 +1,6 @@
 export type Lang = "ru" | "en";
 
 export type I18nKey =
-  | "nav.home"
   | "nav.profile"
   | "nav.scan"
   | "nav.participants"
@@ -31,7 +30,6 @@ export type I18nKey =
   | "home.open"
   | "home.participants"
   | "home.programSpeakers"
-  | "home.profile.cardTitle"
   | "home.profile.openProfile"
   | "profile.title"
   | "profile.edit"
@@ -128,7 +126,6 @@ export type I18nKey =
 
 const dict: Record<Lang, Record<I18nKey, string>> = {
   ru: {
-    "nav.home": "Главная",
     "nav.profile": "Профиль",
     "nav.scan": "Сканировать",
     "nav.participants": "Участники",
@@ -159,7 +156,6 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "home.open": "Открыть",
     "home.participants": "Участники",
     "home.programSpeakers": "Программа / Спикеры",
-    "home.profile.cardTitle": "Мой профиль",
     "home.profile.openProfile": "Открыть профиль",
 
     "profile.title": "Профиль",
@@ -264,7 +260,6 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "gate.loading": "Загрузка…",
   },
   en: {
-    "nav.home": "Home",
     "nav.profile": "Profile",
     "nav.scan": "Scan",
     "nav.participants": "Participants",
@@ -295,7 +290,6 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     "home.open": "Open",
     "home.participants": "Participants",
     "home.programSpeakers": "Program / Speakers",
-    "home.profile.cardTitle": "My profile",
     "home.profile.openProfile": "Open profile",
 
     "profile.title": "Profile",

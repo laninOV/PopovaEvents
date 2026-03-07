@@ -41,34 +41,108 @@ type ParsedScheduleItem = {
   effectiveEnd: Date;
 };
 
-function parseScheduleDateTime(raw: string | null): Date | null {
+type WallDateTime = {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+  millisecond: number;
+};
+
+const tzFormatterCache = new Map<string, Intl.DateTimeFormat>();
+
+function getTzFormatter(timeZone: string) {
+  const key = `parts:${timeZone}`;
+  const cached = tzFormatterCache.get(key);
+  if (cached) return cached;
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  tzFormatterCache.set(key, formatter);
+  return formatter;
+}
+
+function getWallDateInTimeZone(date: Date, timeZone: string): WallDateTime {
+  const parts = getTzFormatter(timeZone).formatToParts(date);
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value ?? "0");
+  return {
+    year: value("year"),
+    month: value("month"),
+    day: value("day"),
+    hour: value("hour"),
+    minute: value("minute"),
+    second: value("second"),
+    millisecond: date.getUTCMilliseconds(),
+  };
+}
+
+function getTimeZoneOffsetMs(date: Date, timeZone: string) {
+  const wall = getWallDateInTimeZone(date, timeZone);
+  const asUtc = Date.UTC(wall.year, wall.month - 1, wall.day, wall.hour, wall.minute, wall.second, 0);
+  return asUtc - date.getTime();
+}
+
+function zonedWallDateToDate(wall: WallDateTime, timeZone: string) {
+  const utcGuess = Date.UTC(
+    wall.year,
+    wall.month - 1,
+    wall.day,
+    wall.hour,
+    wall.minute,
+    wall.second,
+    wall.millisecond,
+  );
+  let offset = getTimeZoneOffsetMs(new Date(utcGuess), timeZone);
+  let ts = utcGuess - offset;
+  const correctedOffset = getTimeZoneOffsetMs(new Date(ts), timeZone);
+  if (correctedOffset !== offset) {
+    offset = correctedOffset;
+    ts = utcGuess - offset;
+  }
+  const d = new Date(ts);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function parseIsoLocalNoTz(value: string, timeZone: string) {
+  const m = value.match(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/,
+  );
+  if (!m) return null;
+  const [, y, mo, d, h, mi, s = "0", ms = "0"] = m;
+  const msPadded = ms.padEnd(3, "0");
+  return zonedWallDateToDate(
+    {
+      year: Number(y),
+      month: Number(mo),
+      day: Number(d),
+      hour: Number(h),
+      minute: Number(mi),
+      second: Number(s),
+      millisecond: Number(msPadded),
+    },
+    timeZone,
+  );
+}
+
+function parseScheduleDateTime(raw: string | null, timeZone = "Europe/Moscow", baseDate = new Date()): Date | null {
   const v = (raw ?? "").trim();
   if (!v) return null;
 
-  const parseIsoLocalNoTz = (value: string) => {
-    const m = value.match(
-      /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/,
-    );
-    if (!m) return null;
-    const [, y, mo, d, h, mi, s = "0", ms = "0"] = m;
-    const msPadded = ms.padEnd(3, "0");
-    const dt = new Date(
-      Number(y),
-      Number(mo) - 1,
-      Number(d),
-      Number(h),
-      Number(mi),
-      Number(s),
-      Number(msPadded),
-    );
-    return Number.isNaN(dt.getTime()) ? null : dt;
-  };
-
   // ISO or near-ISO
   if (/^\d{4}-\d{2}-\d{2}T/.test(v)) {
-    // If timezone is missing, parse as local time (Safari/iOS can treat it as UTC).
+    // If timezone is missing, interpret value in event timezone.
     const hasTz = /([zZ]|[+-]\d{2}:?\d{2})$/.test(v);
-    if (!hasTz) return parseIsoLocalNoTz(v);
+    if (!hasTz) return parseIsoLocalNoTz(v, timeZone);
     const d = new Date(v);
     return Number.isNaN(d.getTime()) ? null : d;
   }
@@ -76,25 +150,44 @@ function parseScheduleDateTime(raw: string | null): Date | null {
   // "YYYY-MM-DD HH:mm[:ss]" → make it ISO-like (important for some WebViews)
   if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(v)) {
     const normalized = v.replace(" ", "T");
-    return parseIsoLocalNoTz(normalized);
+    return parseIsoLocalNoTz(normalized, timeZone);
   }
 
   // "DD.MM.YYYY HH:mm"
   const m = v.match(/^(\d{2})\.(\d{2})\.(\d{4})(?:[ T](\d{2}):(\d{2}))?$/);
   if (m) {
     const [, dd, mm, yyyy, hh = "00", mi = "00"] = m;
-    const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd), Number(hh), Number(mi), 0, 0);
-    return Number.isNaN(d.getTime()) ? null : d;
+    return zonedWallDateToDate(
+      {
+        year: Number(yyyy),
+        month: Number(mm),
+        day: Number(dd),
+        hour: Number(hh),
+        minute: Number(mi),
+        second: 0,
+        millisecond: 0,
+      },
+      timeZone,
+    );
   }
 
-  // "HH:mm" (assume today, local)
+  // "HH:mm" (assume today in event timezone)
   const t = v.match(/^(\d{2}):(\d{2})$/);
   if (t) {
     const [, hh, mi] = t;
-    const d = new Date();
-    d.setSeconds(0, 0);
-    d.setHours(Number(hh), Number(mi), 0, 0);
-    return Number.isNaN(d.getTime()) ? null : d;
+    const base = getWallDateInTimeZone(baseDate, timeZone);
+    return zonedWallDateToDate(
+      {
+        year: base.year,
+        month: base.month,
+        day: base.day,
+        hour: Number(hh),
+        minute: Number(mi),
+        second: 0,
+        millisecond: 0,
+      },
+      timeZone,
+    );
   }
 
   const d = new Date(v);
@@ -191,9 +284,9 @@ export default function ProgramPage() {
   const parsedTimeline = useMemo<ParsedScheduleItem[]>(() => {
     const parsed = items
       .map((item) => {
-        const start = parseScheduleDateTime(item.startsAt);
+        const start = parseScheduleDateTime(item.startsAt, eventTimeZone, now);
         if (!start) return null;
-        const end = parseScheduleDateTime(item.endsAt);
+        const end = parseScheduleDateTime(item.endsAt, eventTimeZone, now);
         return { item, start, end };
       })
       .filter((x): x is { item: ScheduleItem; start: Date; end: Date | null } => Boolean(x))
@@ -210,7 +303,7 @@ export default function ProgramPage() {
       const effectiveEnd = explicitEnd ?? inferredEnd ?? new Date(entry.start.getTime() + 60 * 60 * 1000);
       return { ...entry, effectiveEnd };
     });
-  }, [items]);
+  }, [eventTimeZone, items, now]);
   const parsedTimelineById = useMemo(
     () => new Map(parsedTimeline.map((entry) => [entry.item.id, entry])),
     [parsedTimeline],
@@ -360,8 +453,8 @@ export default function ProgramPage() {
           <ul className="space-y-2">
             {items.map((it) => {
               const parsed = parsedTimelineById.get(it.id);
-              const start = parsed?.start ?? parseScheduleDateTime(it.startsAt);
-              const end = parsed?.end ?? parseScheduleDateTime(it.endsAt);
+              const start = parsed?.start ?? parseScheduleDateTime(it.startsAt, eventTimeZone, now);
+              const end = parsed?.end ?? parseScheduleDateTime(it.endsAt, eventTimeZone, now);
               const time = start
                 ? `${timeFormatter.format(start)}${end ? `–${timeFormatter.format(end)}` : ""}`
                 : it.startsAt;
